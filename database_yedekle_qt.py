@@ -42,20 +42,20 @@ class DemoDialog(QDialog):
         b=QDialogButtonBox();b.addButton("Talep gönder",QDialogButtonBox.ButtonRole.AcceptRole);b.addButton("Vazgeç",QDialogButtonBox.ButtonRole.RejectRole);b.accepted.connect(self.accept);b.rejected.connect(self.reject);l.addWidget(b)
 class App(QMainWindow):
     def __init__(self):
-        super().__init__();self.setWindowTitle(APP);self.resize(1240,820);self.setMinimumSize(1080,720);self.setWindowIcon(QIcon(db_icon("app",64)))
+        super().__init__();self.setWindowTitle(APP);self.resize(1020,700);self.setMinimumSize(900,600);self.setWindowIcon(QIcon(db_icon("app",64)))
         self.bus=Bus();self.bus.scan.connect(self.scanned);self.bus.done.connect(self.backup_result);self.items=[];self.found=[]
         self.cfgdir=Path(os.getenv("APPDATA",str(Path.home())))/"DatabaseYedekle";self.cfgdir.mkdir(parents=True,exist_ok=True);self.cfgfile=self.cfgdir/"config.json"
         try:self.cfg=json.loads(self.cfgfile.read_text(encoding="utf-8"))
         except Exception:self.cfg={}
         self.build();self.style();self.statusBar().showMessage("Hazır")
     def build(self):
-        root=QWidget();root.setObjectName("root");outer=QVBoxLayout(root);outer.setContentsMargins(26,22,26,18);outer.setSpacing(20)
+        root=QWidget();root.setObjectName("root");outer=QVBoxLayout(root);outer.setContentsMargins(18,14,18,12);outer.setSpacing(14)
         head=QHBoxLayout();logo=QLabel();logo.setPixmap(db_icon("app",54));head.addWidget(logo)
         brand=QVBoxLayout();ey=QLabel("DATABASE YEDEKLE  /  BACKUP CONTROL");ey.setObjectName("eyebrow");title=QLabel("Güvenli yedekleme merkezi");title.setObjectName("title");sub=QLabel("SQL SERVER  •  POSTGRESQL  •  CLOUD STORAGE");sub.setObjectName("muted")
         brand.addWidget(ey);brand.addWidget(title);brand.addWidget(sub);head.addLayout(brand);head.addStretch()
         support=QPushButton("Destek");support.clicked.connect(lambda:webbrowser.open("mailto:oguzhanyilmaz8@gmail.com?subject=Database%20Yedekle%20Destek"));demo=QPushButton("Demo / Müşteri Kaydı");demo.clicked.connect(self.demo)
-        head.addWidget(support);head.addWidget(demo);outer.addLayout(head)
-        body=QHBoxLayout();body.setSpacing(20);side=QFrame();side.setObjectName("sidebar");side.setFixedWidth(224);sl=QVBoxLayout(side);sl.setContentsMargins(14,18,14,16);sl.setSpacing(8)
+        head.addWidget(support);demo.setMinimumWidth(142);head.addWidget(demo);outer.addLayout(head)
+        body=QHBoxLayout();body.setSpacing(14);side=QFrame();side.setObjectName("sidebar");side.setFixedWidth(188);sl=QVBoxLayout(side);sl.setContentsMargins(10,12,10,10);sl.setSpacing(6)
         cap=QLabel("ÇALIŞMA ALANI");cap.setObjectName("eyebrow");sl.addWidget(cap);self.nav=[];self.stack=QStackedWidget()
         for i,t in enumerate(["Veritabanları","Otomatik yedekleme","Yedekleme hedefi"]):
             b=QPushButton(["▦","◷","⇧"][i]+"    "+t);b.setObjectName("nav");b.setCheckable(True);b.clicked.connect(lambda checked=False,j=i:self.navigate(j));sl.addWidget(b);self.nav.append(b)
@@ -72,17 +72,18 @@ class App(QMainWindow):
     def table(self,heads):
         t=QTableWidget(0,len(heads));t.setHorizontalHeaderLabels(heads);t.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows);t.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection);t.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers);t.verticalHeader().hide();t.setShowGrid(False);t.setAlternatingRowColors(True);t.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch);return t
     def db_ui(self):
-        o=QVBoxLayout(self.dbpage);o.setContentsMargins(0,0,0,0);o.setSpacing(12);top=QHBoxLayout();titles=QVBoxLayout();h=QLabel("Veritabanı bağlantıları");h.setObjectName("pageTitle");titles.addWidget(h);d=QLabel("Yedeklenecek kaynakları seç veya sunucularda otomatik arama yap.");d.setObjectName("muted");titles.addWidget(d);top.addLayout(titles);top.addStretch()
-        self.kind=QComboBox();self.kind.addItems(["SQL Server","PostgreSQL"]);self.kind.currentTextChanged.connect(self.kind_changed);self.kind_icon=QLabel();self.kind_icon.setFixedSize(40,40);top.addWidget(self.kind_icon);top.addWidget(self.kind)
-        for text,fn in [("Tara",self.scan_db),("＋  Bağlantı ekle",self.add_db),("Kaldır",self.remove_db)]:
+        o=QVBoxLayout(self.dbpage);o.setContentsMargins(0,0,0,0);o.setSpacing(12)
+        title_row=QVBoxLayout();h=QLabel("Veritabanı bağlantıları");h.setObjectName("pageTitle");title_row.addWidget(h);d=QLabel("Yedeklenecek kaynakları seç veya sunucularda otomatik arama yap.");d.setObjectName("muted");title_row.addWidget(d);o.addLayout(title_row)
+        top=QHBoxLayout();top.setSpacing(8);self.kind=QComboBox();self.kind.addItems(["SQL Server","PostgreSQL"]);self.kind.setMinimumWidth(125);self.kind.currentTextChanged.connect(self.kind_changed);self.kind_icon=QLabel();self.kind_icon.setFixedSize(34,34);top.addWidget(self.kind_icon);top.addWidget(self.kind)
+        for text,fn in [("Tara",self.scan_db),("＋ Bağlantı ekle",self.add_db),("Kaldır",self.remove_db)]:
             b=QPushButton(text);b.clicked.connect(fn)
             if text=="Tara": self.scan_button=b
             if text.startswith("＋"): b.setObjectName("primary")
             top.addWidget(b)
-        o.addLayout(top);split=QSplitter(Qt.Orientation.Vertical);split.setChildrenCollapsible(False)
+        top.addStretch();o.addLayout(top);split=QSplitter(Qt.Orientation.Vertical);split.setChildrenCollapsible(False)
         c,l=self.card("Yedekleme listesi","Satıra çift tıklayarak yedeklemeye dahil etme durumunu değiştir.");self.tbl=self.table(["Dahil","Motor","Sunucu / Host","Veritabanı","Yedek adı"]);self.tbl.cellDoubleClicked.connect(self.toggle);l.addWidget(self.tbl);split.addWidget(c)
         c,l=self.card("Arama sonuçları","Bulunan veritabanlarını seçip yedekleme listesine ekle.");self.results=self.table(["Motor","Sunucu","Bulunan veritabanı"]);l.addWidget(self.results)
-        row=QHBoxLayout();self.host_filter=QLineEdit();self.host_filter.setPlaceholderText("Sunucu adı/IP; boşsa localhost");row.addWidget(self.host_filter,1);b=QPushButton("Seçilenleri ekle");b.setObjectName("primary");b.clicked.connect(self.add_found);row.addWidget(b);l.addLayout(row);split.addWidget(c);split.setSizes([330,270]);o.addWidget(split,1);self.kind_changed(self.kind.currentText())
+        row=QHBoxLayout();self.host_filter=QLineEdit();self.host_filter.setPlaceholderText("Sunucu adı/IP; boşsa localhost");row.addWidget(self.host_filter,1);b=QPushButton("Seçilenleri ekle");b.setObjectName("primary");b.clicked.connect(self.add_found);row.addWidget(b);l.addLayout(row);split.addWidget(c);split.setSizes([270,230]);o.addWidget(split,1);self.kind_changed(self.kind.currentText())
     def schedule_ui(self):
         o=QVBoxLayout(self.schedpage);o.setContentsMargins(0,0,0,0);h=QLabel("Otomatik yedekleme");h.setObjectName("pageTitle");o.addWidget(h)
         c,l=self.card("Yedekleme planı","Seçtiğin veritabanları uygulama açıkken belirlenen aralıkta yedeklenir.");self.auto=QCheckBox("Otomatik yedeklemeyi etkinleştir");l.addWidget(self.auto)
@@ -94,7 +95,7 @@ class App(QMainWindow):
         o=QVBoxLayout(self.storepage);o.setContentsMargins(0,0,0,0);h=QLabel("Yedekleme hedefi");h.setObjectName("pageTitle");o.addWidget(h)
         c,l=self.card("Depolama sağlayıcısı","Yedekler seçilen hedefe doğrudan gönderilir; aracı sunucu kullanılmaz.")
         row=QHBoxLayout();row.addWidget(QLabel("Hedef"));self.target=QComboBox();self.target.addItems(["Yerel klasör","Google Drive","Dropbox","S3 uyumlu depolama","QNAP / SFTP"]);self.target.currentTextChanged.connect(self.target_changed);row.addWidget(self.target);row.addStretch();l.addLayout(row)
-        self.pages=QStackedWidget();l.addWidget(self.pages)
+        self.pages=QStackedWidget();self.pages.setMinimumHeight(250);l.addWidget(self.pages,1)
         w=QWidget();g=QGridLayout(w);self.local=QLineEdit(str(Path.home()/"DatabaseBackups"));b=QPushButton("Klasör seç");b.clicked.connect(self.browse);g.addWidget(QLabel("Yerel yedek klasörü"),0,0);g.addWidget(self.local,1,0);g.addWidget(b,1,1);self.pages.addWidget(w)
         self.pages.addWidget(self.notice("Google Drive","Google OAuth Desktop istemci bilgisi ve izinler yapılandırılmış olmalıdır."))
         self.pages.addWidget(self.notice("Dropbox","Dropbox OAuth uygulama anahtarıyla bağlantı kurulmalıdır."))
@@ -104,7 +105,7 @@ class App(QMainWindow):
         for pos,lab,widget in [(0,"Sunucu / IP",self.shost),(1,"Port",self.sport),(2,"Kullanıcı",self.suser),(3,"Parola",self.spass),(4,"Uzak klasör",self.spath)]:
             g.addWidget(QLabel(lab),pos//3*2,pos%3);g.addWidget(widget,pos//3*2+1,pos%3)
         self.pages.addWidget(w)
-        row=QHBoxLayout();save=QPushButton("Ayarları kaydet");save.setObjectName("primary");save.clicked.connect(self.save_cfg);test=QPushButton("Bağlantıyı test et");test.clicked.connect(self.test_target);row.addWidget(save);row.addWidget(test);row.addStretch();l.addLayout(row);o.addWidget(c);o.addStretch();self.target_changed(self.target.currentText())
+        row=QHBoxLayout();save=QPushButton("Ayarları kaydet");save.setObjectName("primary");save.clicked.connect(self.save_cfg);test=QPushButton("Bağlantıyı test et");test.clicked.connect(self.test_target);row.addWidget(save);row.addWidget(test);row.addStretch();l.addLayout(row);o.addWidget(c,1);self.target_changed(self.target.currentText())
     def notice(self,title,desc):
         w=QWidget();l=QVBoxLayout(w);h=QLabel(title);h.setObjectName("section");d=QLabel(desc);d.setObjectName("muted");d.setWordWrap(True);l.addWidget(h);l.addWidget(d);l.addStretch();return w
     def style(self):
@@ -113,10 +114,10 @@ class App(QMainWindow):
         QFrame#sidebar{background:#0E1628;border:1px solid #1D2A42;border-radius:18px} QFrame#card{background:#101A2D;border:1px solid #263752;border-radius:16px}
         QLabel{color:#E8F0FF;background:transparent} QLabel#title{font-size:23pt;font-weight:750} QLabel#pageTitle{font-size:20pt;font-weight:750;padding:2px 0 4px 0} QLabel#section{font-size:12pt;font-weight:700}
         QLabel#eyebrow{color:#22D3EE;font-size:8pt;font-weight:700;letter-spacing:1px} QLabel#muted{color:#91A4C5;font-size:9pt}
-        QPushButton{color:#E8F0FF;background:#19263D;border:1px solid #2A3B58;border-radius:10px;padding:11px 16px;font-weight:650} QPushButton:hover{background:#263954;border-color:#456184} QPushButton:pressed{background:#101A2D}
+        QPushButton{color:#E8F0FF;background:#19263D;border:1px solid #2A3B58;border-radius:9px;padding:9px 11px;font-weight:650} QPushButton:hover{background:#263954;border-color:#456184} QPushButton:pressed{background:#101A2D}
         QPushButton#primary{background:#6D45E8;color:white;border:1px solid #8B73FF;border-radius:10px;padding:11px 17px} QPushButton#primary:hover{background:#805FF0}
         QPushButton#nav{text-align:left;background:transparent;border:0;padding:12px 10px;color:#A6B7D4} QPushButton#nav:hover{background:#17233A} QPushButton#nav:checked{background:#1A2C43;color:#22D3EE;border-left:3px solid #22D3EE}
-        QLineEdit,QComboBox{background:#0B1425;color:#EDF3FF;border:1px solid #2B3D5A;border-radius:9px;padding:11px 12px;selection-background-color:#5B21B6;min-height:20px}
+        QLineEdit,QComboBox{background:#0B1425;color:#EDF3FF;border:1px solid #2B3D5A;border-radius:8px;padding:8px 10px;selection-background-color:#5B21B6;min-height:18px}
         QLineEdit:focus,QComboBox:focus{border:1px solid #22D3EE} QComboBox QAbstractItemView{background:#111A2E;color:#E8F0FF;selection-background-color:#3730A3}
         QCheckBox{spacing:9px;color:#D9E5FA;padding:5px 0} QCheckBox::indicator{width:17px;height:17px} QCheckBox::indicator:unchecked{background:#0D172A;border:1px solid #4A5D7B;border-radius:4px} QCheckBox::indicator:checked{background:#7C3AED;border:1px solid #A78BFA;border-radius:4px}
         QTableWidget{background:#0B1425;alternate-background-color:#101C30;color:#E2EBFC;border:1px solid #263752;border-radius:11px;gridline-color:transparent;selection-background-color:#293D62;selection-color:white;outline:0}
