@@ -41,7 +41,7 @@ jobs:
         run: python -m pip install --upgrade pip pyinstaller pillow google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko cryptography
 
       - name: Check Python syntax
-        run: python -m py_compile Database_Yedekle.py licensing_client.py scripts/generate_license_signing_key.py
+        run: python -m py_compile Database_Yedekle.py licensing_client.py license_manager.py scripts/generate_license_signing_key.py
 
       - name: Test license verification
         run: python -m unittest discover -s tests -v
@@ -65,11 +65,10 @@ jobs:
         shell: pwsh
         run: |
           $common = @("--noconfirm","--clean","--onefile","--windowed","--icon","Database-Yedekle.ico","--collect-all","googleapiclient","--collect-all","google_auth_oauthlib","--collect-all","google.auth","--name","Database Yedekle","Database_Yedekle.py")
-          if (Test-Path client_secrets.json) {
-            python -m PyInstaller @common --add-data "client_secrets.json;."
-          } else {
-            python -m PyInstaller @common
-          }
+          $data = @()
+          if (Test-Path client_secrets.json) { $data += @("--add-data", "client_secrets.json;.") }
+          if (Test-Path license-public-jwk.json) { $data += @("--add-data", "license-public-jwk.json;.") }
+          python -m PyInstaller @common @data
 
       - name: Create distribution package
         shell: pwsh
@@ -78,6 +77,7 @@ jobs:
           Copy-Item "dist/Database Yedekle.exe" package/
           Copy-Item "Database_Yedekle_Logo.svg" package/
           Copy-Item "Database-Yedekle.ico" package/
+          if (Test-Path license-public-jwk.json) { Copy-Item "license-public-jwk.json" package/ }
           @(
             "Database Yedekle - Windows"
             "=========================="
