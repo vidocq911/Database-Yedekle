@@ -51,7 +51,7 @@ $privateJwk = Get-Content .\\license-signing-private.jwk.json -Raw
 supabase secrets set LICENSE_SIGNING_PRIVATE_JWK="$privateJwk" --project-ref hkuoymftockxmynrcjwh
 supabase functions deploy activate-license --project-ref hkuoymftockxmynrcjwh --no-verify-jwt
 ```
-Keep the public JWK from `license-signing-public.jwk.json` for the desktop client. Never commit either key file. The activation response is signed over a base64url-encoded JSON payload; a client must verify the Ed25519 signature before trusting claims. The payload sets `verify_again_after` to 168 hours and `offline_grace_until` to 336 hours after issuance. These timestamps only work if the desktop app enforces them and checks the device fingerprint hash. `licensing_client.py` provides signature/claim verification helpers, but the existing backup GUI does not yet enforce a license gate or persist the signed response.
+Keep the public JWK from `license-signing-public.jwk.json` for the desktop client. Never commit either key file. The activation response is signed over a base64url-encoded JSON payload; a client must verify the Ed25519 signature before trusting claims. The payload sets `verify_again_after` to 168 hours and `offline_grace_until` to 336 hours after issuance. The GUI now has a **Lisans** action, online activation, signature verification, and a local cache of the signed envelope. The activation client checks that the public JWK is present before contacting the server, preventing an activation slot from being consumed when the client cannot verify the response. However, the app does not yet enforce a license gate before backup operations or perform the scheduled online recheck automatically. Those are remaining implementation tasks.
 
 Keep JWT verification enabled for `admin-review-demo`; the function additionally validates the user's access token and checks `public.admin_users` for an active `owner` or `admin` role. The public `demo-request` endpoint intentionally accepts unauthenticated requests. CORS is not authentication; before production, add edge rate limiting and CAPTCHA/bot protection. The `create-license` endpoint requires an authenticated active `owner` or `admin`, accepts an active customer ID, and returns a newly generated license key only once while storing only its SHA-256 hash. The `activate-license` endpoint accepts a license key and device fingerprint, hashes both server-side, and atomically binds the license to one device. A different device is rejected until an administrator releases the current device using `release-license-device`.
 
@@ -71,8 +71,9 @@ The admin-review handler calls `public.review_demo_request_atomic`, which update
 - Build and test the admin UI.
 - Review the atomic demo-review RPC and test unauthorized, non-admin, approve, reject, duplicate-review, and partial-failure cases.
 - Verify unauthorized, non-admin, approve, reject, duplicate-review, and partial-failure cases.
-- Integrate `licensing_client.py` into the GUI: prompt for a license key, activate online, securely cache the exact signed envelope, re-verify it on each launch, and enforce online recheck at 168 hours and offline cutoff at 336 hours. Do not release the feature until the public JWK is embedded and end-to-end tests pass.
-- Integrate the Windows app without embedding a service-role/secret key or private signing key.
+- Bundle the generated public JWK as `license-public-jwk.json` with the Windows app; never bundle the private signing key or any Supabase secret.
+- Enforce the verified license state before backup operations, re-verify the cached envelope on each launch, and implement online rechecks at 168 hours plus the offline cutoff at 336 hours.
+- Add automated tests for the activation/cache flow and run an end-to-end test against the deployed Supabase function before production release.
 - Run Supabase security advisors and confirm no anonymous/authenticated grants or policies expose private customer/license/payment records.
 - Do not enable production auto-deploy until migrations and functions are reviewed and tested.
 
