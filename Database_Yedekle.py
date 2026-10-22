@@ -1,15 +1,17 @@
-import os, sys, json, shutil, subprocess, threading, tkinter as tk, webbrowser
+import os, sys, json, shutil, subprocess, threading, tkinter as tk, webbrowser, urllib.request, urllib.error
 from tkinter import ttk, messagebox, filedialog, simpledialog
 from pathlib import Path
 from datetime import datetime, timedelta
 
 APP = "Database Yedekle"
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-BG = "#F3F6FA"
-NAVY = "#183153"
+BG = "#F4F7FB"
+NAVY = "#12243A"
 BLUE = "#2563EB"
-MUTED = "#607086"
+MUTED = "#63758B"
 GREEN = "#13805C"
+CARD = "#FFFFFF"
+SUPABASE_URL = "https://hkuoymftockxmynrcjwh.supabase.co"
 
 def tool(name):
     for p in [
@@ -23,8 +25,8 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Database Yedekle")
-        self.geometry("900x620")
-        self.resizable(False, False)
+        self.geometry("1120x780")
+        self.minsize(1000, 700)
         self.configure(bg=BG)
         self._set_app_icon()
         self.items, self.found = [], []
@@ -72,16 +74,16 @@ class App(tk.Tk):
         s.configure("TFrame",background=BG)
         s.configure("TLabel",background=BG,foreground=NAVY,font=("Segoe UI",10))
         s.configure("Muted.TLabel",foreground=MUTED,font=("Segoe UI",9))
-        s.configure("Title.TLabel",font=("Segoe UI",16,"bold"),foreground=NAVY)
-        s.configure("Section.TLabel",font=("Segoe UI",10,"bold"),foreground=NAVY)
-        s.configure("TButton",font=("Segoe UI",9),padding=(7,4),background="#E6ECF4",foreground=NAVY)
-        s.map("TButton",background=[("active","#D7E2F0")])
-        s.configure("Primary.TButton",font=("Segoe UI",9,"bold"),padding=(9,5),background=BLUE,foreground="white")
+        s.configure("Title.TLabel",font=("Segoe UI",20,"bold"),foreground=NAVY)
+        s.configure("Section.TLabel",font=("Segoe UI",11,"bold"),foreground=NAVY)
+        s.configure("TButton",font=("Segoe UI",10),padding=(11,7),background="#E8EEF6",foreground=NAVY,borderwidth=0)
+        s.map("TButton",background=[("active","#D7E4F5")],foreground=[("active",NAVY)])
+        s.configure("Primary.TButton",font=("Segoe UI",10,"bold"),padding=(14,8),background=BLUE,foreground="white")
         s.map("Primary.TButton",background=[("active","#1D4ED8")],foreground=[("active","white")])
-        s.configure("Treeview",rowheight=22,font=("Segoe UI",9),background="white",fieldbackground="white")
-        s.configure("Treeview.Heading",font=("Segoe UI",9,"bold"),background="#E8EEF6",foreground=NAVY,padding=7)
+        s.configure("Treeview",rowheight=30,font=("Segoe UI",10),background=CARD,fieldbackground=CARD,foreground=NAVY,borderwidth=0)
+        s.configure("Treeview.Heading",font=("Segoe UI",10,"bold"),background="#E8EEF6",foreground=NAVY,padding=10)
         s.configure("TNotebook",background=BG,borderwidth=0,tabmargins=(0,0,0,0))
-        s.configure("TNotebook.Tab",padding=(13,7),font=("Segoe UI",9,"bold"),background="#E7EDF5",foreground=MUTED)
+        s.configure("TNotebook.Tab",padding=(18,11),font=("Segoe UI",10,"bold"),background="#E7EDF5",foreground=MUTED)
         s.map("TNotebook.Tab",background=[("selected","white"),("active","#DCE9FA")],foreground=[("selected",BLUE),("active",NAVY)])
 
     def _build(self):
@@ -97,7 +99,9 @@ class App(tk.Tk):
         logo.create_line(27,31,31,35,37,27,fill="white",width=2)
         headtext=ttk.Frame(head);headtext.pack(side="left",fill="x",expand=True)
         ttk.Label(headtext,text="Database Yedekle",style="Title.TLabel").pack(anchor="w")
-        ttk.Label(headtext,text="Yedeklerini yönet • yerel disk • Google Drive • QNAP",style="Muted.TLabel").pack(anchor="w",pady=(2,0))
+        ttk.Label(headtext,text="Güvenli yedekleme merkezi  •  SQL Server  •  PostgreSQL  •  Bulut ve NAS",style="Muted.TLabel").pack(anchor="w",pady=(4,0))
+        ttk.Button(head,text="Demo / Müşteri Kaydı",command=self.open_demo_registration).pack(side="right",padx=(8,0))
+        ttk.Button(head,text="Destek",command=lambda:webbrowser.open("https://github.com/vidocq911/Database-Yedekle/issues")).pack(side="right")
         self.tabs=ttk.Notebook(shell);self.tabs.pack(fill="both",expand=True)
         self.dbtab=ttk.Frame(self.tabs,padding=7);self.schedtab=ttk.Frame(self.tabs,padding=8);self.storagetab=ttk.Frame(self.tabs,padding=8)
         self.tabs.add(self.dbtab,text="  Veritabanları  ")
@@ -128,10 +132,67 @@ class App(tk.Tk):
             messagebox.showinfo("Lisans", "Lisans doğrulandı. Bitiş: " + str(payload.get("expires_at") or "Süresiz"), parent=self)
         except Exception as e:
             messagebox.showerror("Lisans", str(e), parent=self)
+    def _draw_db_icon(self):
+        if not hasattr(self, "db_icon"): return
+        self.db_icon.delete("all")
+        color = "#D94B45" if self.dbtype.get() == "SQL Server" else "#336791"
+        self.db_icon.create_oval(4,4,30,13,fill=color,outline="")
+        self.db_icon.create_rectangle(4,8,30,25,fill=color,outline="")
+        self.db_icon.create_arc(4,18,30,31,start=0,extent=180,style="arc",outline=color, width=2)
+        self.db_icon.create_line(8,15,26,15,fill="#FFFFFF",width=2)
+
+    def open_demo_registration(self):
+        win=tk.Toplevel(self)
+        win.title("Demo erişimi ve müşteri kaydı")
+        win.configure(bg=BG)
+        win.resizable(False,False)
+        win.transient(self); win.grab_set()
+        outer=ttk.Frame(win,padding=24); outer.pack(fill="both",expand=True)
+        ttk.Label(outer,text="Database Yedekle",style="Title.TLabel").pack(anchor="w")
+        ttk.Label(outer,text="Ücretsiz demo talep et veya müşteri kaydını oluştur.",style="Muted.TLabel").pack(anchor="w",pady=(4,18))
+        fields={}
+        for key,label in [("company_name","Firma adı"),("contact_person","Yetkili kişi"),("phone","Telefon"),("email","E-posta (isteğe bağlı)")]:
+            ttk.Label(outer,text=label,style="Section.TLabel").pack(anchor="w",pady=(5,3))
+            var=tk.StringVar()
+            ttk.Entry(outer,textvariable=var,width=48,font=("Segoe UI",10)).pack(fill="x",ipady=5)
+            fields[key]=var
+        ttk.Label(outer,text="Demo süresi, talep yönetici tarafından onaylandıktan sonra başlar.",wraplength=410,style="Muted.TLabel").pack(anchor="w",pady=(12,14))
+        result=tk.StringVar(value="")
+        ttk.Label(outer,textvariable=result,wraplength=410).pack(anchor="w",pady=(0,8))
+        def submit():
+            payload={k:v.get().strip() for k,v in fields.items()}
+            if len(payload["company_name"])<2 or len(payload["contact_person"])<2 or len(payload["phone"])<7:
+                messagebox.showwarning("Eksik bilgi","Firma adı, yetkili kişi ve geçerli telefon zorunludur.",parent=win);return
+            button.configure(state="disabled",text="Gönderiliyor…")
+            try:
+                data=json.dumps(payload).encode("utf-8")
+                req=urllib.request.Request(SUPABASE_URL+"/functions/v1/demo-request",data=data,headers={"Content-Type":"application/json","Accept":"application/json"},method="POST")
+                with urllib.request.urlopen(req,timeout=20) as response:
+                    body=json.loads(response.read().decode("utf-8"))
+                message=body.get("message","Talep alındı.")
+                messagebox.showinfo("Talep alındı",message,parent=win)
+                win.destroy()
+            except urllib.error.HTTPError as exc:
+                try: message=json.loads(exc.read().decode("utf-8")).get("error","Talep gönderilemedi.")
+                except Exception: message="Talep gönderilemedi."
+                result.set(message);button.configure(state="normal",text="Demo talebi gönder")
+            except Exception:
+                result.set("Sunucuya ulaşılamadı. Demo talebi servisi henüz yayımlanmamış olabilir.")
+                button.configure(state="normal",text="Demo talebi gönder")
+        button=ttk.Button(outer,text="Demo talebi gönder",style="Primary.TButton",command=submit)
+        button.pack(fill="x")
+        win.update_idletasks()
+        win.geometry(f"+{self.winfo_rootx()+80}+{self.winfo_rooty()+60}")
+
     def _build_db(self):
         bar=ttk.Frame(self.dbtab);bar.pack(fill="x",pady=(0,10))
-        ttk.Label(bar,text="Veritabanı türü").pack(side="left")
-        ttk.Combobox(bar,textvariable=self.dbtype,values=["SQL Server","PostgreSQL"],state="readonly",width=16).pack(side="left",padx=8)
+        ttk.Label(bar,text="VERİTABANI MOTORU",style="Section.TLabel").pack(side="left",padx=(0,12))
+        self.db_icon=tk.Canvas(bar,width=34,height=34,bg=BG,highlightthickness=0)
+        self.db_icon.pack(side="left",padx=(0,5))
+        self._draw_db_icon()
+        db_combo=ttk.Combobox(bar,textvariable=self.dbtype,values=["SQL Server","PostgreSQL"],state="readonly",width=18,font=("Segoe UI",10))
+        db_combo.pack(side="left",padx=(0,12))
+        db_combo.bind("<<ComboboxSelected>>",lambda _e:self._draw_db_icon())
         ttk.Button(bar,text="Otomatik Ara",command=self.scan).pack(side="left",padx=4)
         ttk.Button(bar,text="Manuel Ekle",command=self.add_manual).pack(side="left",padx=4)
         ttk.Button(bar,text="Kaldır",command=self.remove).pack(side="left",padx=4)
