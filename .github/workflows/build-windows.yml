@@ -9,7 +9,7 @@ on:
 
 # A push and a pull-request sync can target the same branch. Keep only the newest run.
 concurrency:
-  group: build-windows-${{ github.event.pull_request.head.ref || github.ref }}
+  group: build-windows-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
