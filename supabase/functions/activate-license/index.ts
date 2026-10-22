@@ -58,6 +58,22 @@ Deno.serve(async (req) => {
     return json({ success: false, error: "invalid_request" }, 400);
   }
 
+  // Validate signing configuration before binding a license to a device. Otherwise a missing
+  // secret could consume the activation slot while returning an error to the customer.
+  const privateJwkRaw = Deno.env.get("LICENSE_SIGNING_PRIVATE_JWK");
+  if (!privateJwkRaw) {
+    return json({ success: false, error: "license_signing_not_configured" }, 503);
+  }
+  let signingKey: CryptoKey;
+  try {
+    const privateJwk = JSON.parse(privateJwkRaw) as JsonWebKey;
+    signingKey = await crypto.subtle.importKey(
+      "jwk", privateJwk, { name: "Ed25519" }, false, ["sign"],
+    );
+  } catch {
+    return json({ success: false, error: "license_signing_key_invalid" }, 500);
+  }
+
   const admin = createClient(supabaseUrl, secretKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const keyHash = await sha256(licenseKey);
   const deviceHash = await sha256(fingerprint);
@@ -80,28 +96,8 @@ Deno.serve(async (req) => {
     return json({ success: false, error: code }, status);
   }
 
-  // Signed envelope lets the desktop client verify the payload with an embedded
-  // Ed25519 public key. The private JWK must exist only as an Edge Function secret.
-  const privateJwkRaw = Deno.env.get("LICENSE_SIGNING_PRIVATE_JWK");
-  if (!privateJwkRaw) {
-    return json({ success: false, error: "license_signing_not_configured" }, 503);
-  }
-
-  let privateJwk: JsonWebKey;
+  // Sign only after the atomic activation succeeds; signingKey was validated before binding.
   try {
-    privateJwk = JSON.parse(privateJwkRaw) as JsonWebKey;
-  } catch {
-    return json({ success: false, error: "license_signing_key_invalid" }, 500);
-  }
-
-  try {
-    const signingKey = await crypto.subtle.importKey(
-      "jwk",
-      privateJwk,
-      { name: "Ed25519" },
-      false,
-      ["sign"],
-    );
     const issuedAt = new Date().toISOString();
     const payload = {
       schema_version: 1,
