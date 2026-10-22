@@ -25,8 +25,9 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Database Yedekle")
-        self.geometry("1120x780")
-        self.minsize(1000, 700)
+        # Fixed compact desktop layout; keep every tab within the 940x620 window.
+        self.geometry("940x620")
+        self.resizable(False, False)
         self.configure(bg=BG)
         self._set_app_icon()
         self.items, self.found = [], []
@@ -79,7 +80,7 @@ class App(tk.Tk):
         s.configure("TFrame",background=BG)
         s.configure("TLabel",background=BG,foreground=NAVY,font=("Segoe UI",10))
         s.configure("Muted.TLabel",background=BG,foreground=MUTED,font=("Segoe UI",9))
-        s.configure("Title.TLabel",background=BG,font=("Segoe UI",21,"bold"),foreground=NAVY)
+        s.configure("Title.TLabel",background=BG,font=("Segoe UI",17,"bold"),foreground=NAVY)
         s.configure("Section.TLabel",background=BG,font=("Segoe UI",11,"bold"),foreground=NAVY)
         s.configure("Eyebrow.TLabel",background=BG,foreground="#22D3EE",font=("Segoe UI",8,"bold"))
         s.configure("TButton",font=("Segoe UI",10),padding=(11,8),background="#202B43",foreground="#DCE7FF",borderwidth=0,relief="flat")
@@ -95,16 +96,16 @@ class App(tk.Tk):
         s.configure("TCheckbutton",background=BG,foreground="#DCE7FF",font=("Segoe UI",10))
         s.map("TCheckbutton",background=[("active",BG)],foreground=[("active","#FFFFFF")])
         s.configure("TNotebook",background=BG,borderwidth=0,tabmargins=(0,0,0,0),padding=0)
-        s.configure("TNotebook.Tab",padding=(20,13),font=("Segoe UI",10,"bold"),background="#151E32",foreground="#8393B3",borderwidth=0,relief="flat")
+        s.configure("TNotebook.Tab",padding=(13,8),font=("Segoe UI",9,"bold"),background="#151E32",foreground="#8393B3",borderwidth=0,relief="flat")
         s.map("TNotebook.Tab",
               background=[("selected",CARD),("active","#202B43")],
               foreground=[("selected","#22D3EE"),("active","#E7EEFF")],
-              padding=[("selected",(20,13)),("!selected",(20,13))],
+              padding=[("selected",(13,8)),("!selected",(13,8))],
               relief=[("selected","flat"),("!selected","flat")])
 
     def _build(self):
-        shell=ttk.Frame(self,padding=14); shell.pack(fill="both",expand=True)
-        head=ttk.Frame(shell);head.pack(fill="x",pady=(0,13))
+        shell=ttk.Frame(self,padding=10); shell.pack(fill="both",expand=True)
+        head=ttk.Frame(shell);head.pack(fill="x",pady=(0,7))
         logo=tk.Canvas(head,width=58,height=58,bg=BG,highlightthickness=0)
         logo.pack(side="left",padx=(0,12))
         # Layered isometric database mark: cyan edges with violet depth,
@@ -120,16 +121,16 @@ class App(tk.Tk):
         headtext=ttk.Frame(head);headtext.pack(side="left",fill="x",expand=True)
         ttk.Label(headtext,text="DATABASE Yedekle  /  BACKUP CONTROL",style="Eyebrow.TLabel").pack(anchor="w",pady=(1,2))
         ttk.Label(headtext,text="Güvenli yedekleme merkezi",style="Title.TLabel").pack(anchor="w")
-        ttk.Label(headtext,text="SQL SERVER   •   POSTGRESQL   •   GOOGLE DRIVE   •   QNAP / SFTP",style="Muted.TLabel").pack(anchor="w",pady=(3,0))
+        ttk.Label(headtext,text="SQL SERVER • POSTGRESQL • DRIVE • DROPBOX • SFTP",style="Muted.TLabel").pack(anchor="w",pady=(3,0))
         ttk.Button(head,text="Demo / Müşteri Kaydı",command=self.open_demo_registration).pack(side="right",padx=(8,0),pady=(8,0))
         ttk.Button(head,text="Destek",command=lambda:webbrowser.open("mailto:oguzhanyilmaz8@gmail.com?subject=Database%20Yedekle%20Destek")).pack(side="right",pady=(8,0))
         self.tabs=ttk.Notebook(shell);self.tabs.pack(fill="both",expand=True)
-        self.dbtab=ttk.Frame(self.tabs,padding=7);self.schedtab=ttk.Frame(self.tabs,padding=8);self.storagetab=ttk.Frame(self.tabs,padding=8)
+        self.dbtab=ttk.Frame(self.tabs,padding=5);self.schedtab=ttk.Frame(self.tabs,padding=6);self.storagetab=ttk.Frame(self.tabs,padding=6)
         self.tabs.add(self.dbtab,text="  Veritabanları  ")
         self.tabs.add(self.schedtab,text="  Otomatik Yedekleme  ")
         self.tabs.add(self.storagetab,text="  Yedekleme Hedefi  ")
         self._build_db();self._build_schedule();self._build_storage()
-        foot=ttk.Frame(shell);foot.pack(fill="x",pady=(7,0))
+        foot=ttk.Frame(shell);foot.pack(fill="x",pady=(5,0))
         ttk.Label(foot,textvariable=self.status,style="Muted.TLabel").pack(side="left",fill="x",expand=True)
         ttk.Button(foot,text="Lisans",command=self.manage_license).pack(side="right",padx=(8,0))
         ttk.Button(foot,text="Google ile Bağlan",command=self.connect_google).pack(side="right",padx=(8,0))
