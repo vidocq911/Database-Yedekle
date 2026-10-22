@@ -14,6 +14,7 @@ The schema foundation and admin allowlist migrations are:
 - `supabase/migrations/202610220001_licensing_customer_management.sql`
 - `supabase/migrations/202610220002_admin_users.sql`
 - `supabase/migrations/202610220003_atomic_demo_review.sql`
+- `supabase/migrations/202610220004_license_activation_and_device_release.sql`
 
 Only apply migrations that have not already been applied. The schema uses RLS with no client-facing policies on the private customer, demo, license, device, sales, payment, and event tables. Do not add broad `anon` or `authenticated` policies to make the application work.
 
@@ -36,10 +37,12 @@ Deploy these functions from the current branch when ready:
 - `supabase/functions/demo-request/index.ts`
 - `supabase/functions/admin-review-demo/index.ts`
 - `supabase/functions/create-license/index.ts`
+- `supabase/functions/activate-license/index.ts`
+- `supabase/functions/release-license-device/index.ts`
 
-Keep JWT verification enabled for `admin-review-demo`; the function additionally validates the user's access token and checks `public.admin_users` for an active `owner` or `admin` role. The public `demo-request` endpoint intentionally accepts unauthenticated requests. CORS is not authentication; before production, add edge rate limiting and CAPTCHA/bot protection. The `create-license` endpoint requires an authenticated active `owner` or `admin`, accepts an active customer ID, and returns a newly generated license key only once while storing only its SHA-256 hash.
+Keep JWT verification enabled for `admin-review-demo`; the function additionally validates the user's access token and checks `public.admin_users` for an active `owner` or `admin` role. The public `demo-request` endpoint intentionally accepts unauthenticated requests. CORS is not authentication; before production, add edge rate limiting and CAPTCHA/bot protection. The `create-license` endpoint requires an authenticated active `owner` or `admin`, accepts an active customer ID, and returns a newly generated license key only once while storing only its SHA-256 hash. The `activate-license` endpoint accepts a license key and device fingerprint, hashes both server-side, and atomically binds the license to one device. A different device is rejected until an administrator releases the current device using `release-license-device`.
 
-The admin-review handler calls `public.review_demo_request_atomic`, which updates the demo request, customer status, and audit event in a single database transaction. Apply migration `202610220003_atomic_demo_review.sql` before deploying the updated admin-review function; without it, the function returns an explicit error.
+The admin-review handler calls `public.review_demo_request_atomic`, which updates the demo request, customer status, and audit event in a single database transaction. Apply migration `202610220003_atomic_demo_review.sql` before deploying the updated admin-review function; without it, the function returns an explicit error. The activation and device-release handlers call `public.activate_license_atomic` and `public.release_license_device_atomic`; apply migration `202610220004_license_activation_and_device_release.sql` first.
 
 ## Bootstrap the first admin
 
@@ -55,7 +58,7 @@ The admin-review handler calls `public.review_demo_request_atomic`, which update
 - Build and test the admin UI.
 - Move approval/rejection + customer status + audit event into one transaction/RPC.
 - Verify unauthorized, non-admin, approve, reject, duplicate-review, and partial-failure cases.
-- Implement signed license responses, device activation/release, 168-hour online verification and 168-hour offline grace. License issuance has a first server-side implementation, but it has not yet been deployed or end-to-end tested.
+- Implement cryptographically signed license responses and the desktop client's 168-hour online verification plus 168-hour offline grace. Activation/release endpoints now have source implementations but have not been deployed or end-to-end tested. The activation response explicitly marks `signed_response: false`; do not treat it as production-grade offline licensing.
 - Integrate the Windows app without embedding a service-role/secret key or private signing key.
 - Run Supabase security advisors and confirm no anonymous/authenticated grants or policies expose private customer/license/payment records.
 - Do not enable production auto-deploy until migrations and functions are reviewed and tested.
