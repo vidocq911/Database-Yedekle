@@ -106,9 +106,28 @@ class App(tk.Tk):
         self._build_db();self._build_schedule();self._build_storage()
         foot=ttk.Frame(shell);foot.pack(fill="x",pady=(7,0))
         ttk.Label(foot,textvariable=self.status,style="Muted.TLabel").pack(side="left",fill="x",expand=True)
+        ttk.Button(foot,text="Lisans",command=self.manage_license).pack(side="right",padx=(8,0))
         ttk.Button(foot,text="Google ile Bağlan",command=self.connect_google).pack(side="right",padx=(8,0))
         ttk.Button(foot,text="Şimdi Yedekle",style="Primary.TButton",command=self.start).pack(side="right")
 
+    def manage_license(self):
+        from license_manager import activate, check_cached_license
+        try:
+            payload = check_cached_license()
+            expiry = payload.get("expires_at") or "Süresiz"
+            due = payload.get("_client_online_check_due", False)
+            msg = f"Aktif lisans. Bitiş: {expiry}"
+            if due: msg += "\nÇevrimiçi doğrulama zamanı geldi."
+            if not messagebox.askyesno("Lisans", msg + "\n\nYeniden doğrulansın mı?", parent=self): return
+        except Exception as e:
+            if not messagebox.askyesno("Lisans", str(e) + "\n\nLisans anahtarını girmek ister misin?", parent=self): return
+        key = simpledialog.askstring("Lisans etkinleştirme", "Lisans anahtarı:", parent=self)
+        if not key: return
+        try:
+            payload = activate(key)
+            messagebox.showinfo("Lisans", "Lisans doğrulandı. Bitiş: " + str(payload.get("expires_at") or "Süresiz"), parent=self)
+        except Exception as e:
+            messagebox.showerror("Lisans", str(e), parent=self)
     def _build_db(self):
         bar=ttk.Frame(self.dbtab);bar.pack(fill="x",pady=(0,10))
         ttk.Label(bar,text="Veritabanı türü").pack(side="left")
