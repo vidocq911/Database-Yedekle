@@ -27,23 +27,28 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Configure bundled Google OAuth client
+      - name: Configure bundled cloud OAuth clients
         shell: pwsh
         env:
           GOOGLE_OAUTH_CLIENT_JSON: ${{ secrets.GOOGLE_OAUTH_CLIENT_JSON }}
+          DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
         run: |
-          if (-not [string]::IsNullOrWhiteSpace($env:GOOGLE_OAUTH_CLIENT_JSON)) {
-            $env:GOOGLE_OAUTH_CLIENT_JSON | Set-Content -Path client_secrets.json -Encoding utf8
-            $config = Get-Content client_secrets.json -Raw | ConvertFrom-Json
-            if (-not $config.installed) {
-              throw "GOOGLE_OAUTH_CLIENT_JSON must be a Google OAuth Desktop app client JSON (installed)."
-            }
+          if ([string]::IsNullOrWhiteSpace($env:GOOGLE_OAUTH_CLIENT_JSON)) {
+            throw "Missing repository secret GOOGLE_OAUTH_CLIENT_JSON. Add a Google Cloud Desktop OAuth client JSON as a GitHub Actions secret before building."
+          }
+          $env:GOOGLE_OAUTH_CLIENT_JSON | Set-Content -Path client_secrets.json -Encoding utf8
+          $config = Get-Content client_secrets.json -Raw | ConvertFrom-Json
+          if (-not $config.installed) {
+            throw "GOOGLE_OAUTH_CLIENT_JSON must be a Google OAuth Desktop app client JSON (installed)."
+          }
+          if ([string]::IsNullOrWhiteSpace($env:DROPBOX_APP_KEY)) {
+            Write-Host "Dropbox not configured: add DROPBOX_APP_KEY GitHub Actions secret to enable Dropbox."
           } else {
-            Write-Host "Google OAuth config is not set; build the rest of the app without Google sign-in."
+            $env:DROPBOX_APP_KEY | Set-Content -Path dropbox_app_key.txt -Encoding utf8
           }
 
       - name: Install dependencies
-        run: python -m pip install --upgrade pip pyinstaller pillow pyautogui pygetwindow google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko cryptography
+        run: python -m pip install --upgrade pip pyinstaller pillow pyautogui pygetwindow google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko cryptography dropbox
 
       - name: Check Python syntax
         run: python -m py_compile Database_Yedekle.py licensing_client.py license_manager.py scripts/generate_license_signing_key.py
@@ -72,7 +77,9 @@ jobs:
           $common = @("--noconfirm","--clean","--onefile","--windowed","--icon","Database-Yedekle.ico","--collect-all","googleapiclient","--collect-all","google_auth_oauthlib","--collect-all","google.auth","--name","Database Yedekle","Database_Yedekle.py")
           $data = @()
           if (Test-Path client_secrets.json) { $data += @("--add-data", "client_secrets.json;.") }
+          if (Test-Path dropbox_app_key.txt) { $data += @("--add-data", "dropbox_app_key.txt;.") }
           if (Test-Path license-public-jwk.json) { $data += @("--add-data", "license-public-jwk.json;.") }
+          $common += @("--collect-all","dropbox")
           python -m PyInstaller @common @data
 
       - name: GUI smoke test and screenshots
@@ -102,12 +109,14 @@ jobs:
             ""
             "1. Extract this ZIP to a folder."
             "2. Run Database Yedekle.exe."
-            "3. The application opens in a 1120 x 780 window with a matching database-backup icon."
-            "4. Google Drive setup is included in the app build; users should only need to sign in."
-            "5. For remote QNAP, enable/configure SFTP on QNAP and enter its hostname, port, username, password, and remote directory."
-            "6. This build is not code-signed, so Windows SmartScreen may still show a warning."
+            "3. The application opens in a fixed 940 x 620 window."
+            "4. Google Drive OAuth configuration is bundled; users should only need to sign in."
+            "5. Dropbox is enabled when DROPBOX_APP_KEY is configured for the build; users authorize once from the app."
+            "6. For remote QNAP, enable/configure SFTP on QNAP and enter its hostname, port, username, password, and remote directory."
+            "7. This build is not code-signed, so Windows SmartScreen may still show a warning."
           ) | Set-Content -Encoding utf8 package/README.txt
           if (Test-Path client_secrets.json) { Remove-Item client_secrets.json -Force }
+          if (Test-Path dropbox_app_key.txt) { Remove-Item dropbox_app_key.txt -Force }
           Compress-Archive -Path package/* -DestinationPath "Database-Yedekle-Windows.zip" -Force
 
       - name: Upload ZIP package
