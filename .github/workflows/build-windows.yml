@@ -25,13 +25,14 @@ jobs:
         env:
           GOOGLE_OAUTH_CLIENT_JSON: ${{ secrets.GOOGLE_OAUTH_CLIENT_JSON }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:GOOGLE_OAUTH_CLIENT_JSON)) {
-            throw "Missing repository secret GOOGLE_OAUTH_CLIENT_JSON. Add the Google OAuth Desktop client JSON as this GitHub Actions secret; do not commit client_secrets.json to the repository."
-          }
-          $env:GOOGLE_OAUTH_CLIENT_JSON | Set-Content -Path client_secrets.json -Encoding utf8
-          $config = Get-Content client_secrets.json -Raw | ConvertFrom-Json
-          if (-not $config.installed) {
-            throw "GOOGLE_OAUTH_CLIENT_JSON must be a Google OAuth Desktop app client JSON (installed)."
+          if (-not [string]::IsNullOrWhiteSpace($env:GOOGLE_OAUTH_CLIENT_JSON)) {
+            $env:GOOGLE_OAUTH_CLIENT_JSON | Set-Content -Path client_secrets.json -Encoding utf8
+            $config = Get-Content client_secrets.json -Raw | ConvertFrom-Json
+            if (-not $config.installed) {
+              throw "GOOGLE_OAUTH_CLIENT_JSON must be a Google OAuth Desktop app client JSON (installed)."
+            }
+          } else {
+            Write-Host "Google OAuth config is not set; build the rest of the app without Google sign-in."
           }
 
       - name: Install dependencies
@@ -43,7 +44,7 @@ jobs:
       - name: Create application icon
         shell: pwsh
         run: |
-          python -c "from PIL import Image,ImageDraw; im=Image.new('RGBA',(256,256),'#10284a'); d=ImageDraw.Draw(im); d.rounded_rectangle((28,28,178,210),radius=28,fill='#173e6a',outline='#55d8ff',width=12); d.ellipse((32,30,174,88),fill='#10284a',outline='#55d8ff',width=12); d.arc((32,66,174,126),0,180,fill='#55d8ff',width=10); d.arc((32,116,174,176),0,180,fill='#55d8ff',width=10); d.ellipse((135,132,238,235),fill='#2695ff',outline='#b8f2ff',width=7); d.line((157,182,179,204,218,158),fill='white',width=13); im.save('Database-Yedekle.ico',sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256))"
+          python -c "from PIL import Image,ImageDraw; im=Image.new('RGBA',(256,256),'#10284a'); d=ImageDraw.Draw(im); d.rounded_rectangle((28,28,178,210),radius=28,fill='#173e6a',outline='#55d8ff',width=12); d.ellipse((32,30,174,88),fill='#10284a',outline='#55d8ff',width=12); d.arc((32,66,174,126),0,180,fill='#55d8ff',width=10); d.arc((32,116,174,176),0,180,fill='#55d8ff',width=10); d.ellipse((135,132,238,235),fill='#2695ff',outline='#b8f2ff',width=7); d.line((157,182,179,204,218,158),fill='white',width=13); im.save('Database-Yedekle.ico',sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])"
           @(
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">'
             '<rect width="256" height="256" rx="42" fill="#10284a"/>'
@@ -56,7 +57,14 @@ jobs:
           ) | Set-Content -Encoding utf8 Database_Yedekle_Logo.svg
 
       - name: Build executable
-        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --icon "Database-Yedekle.ico" --add-data "client_secrets.json;." --collect-all googleapiclient --collect-all google_auth_oauthlib --collect-all google.auth --name "Database Yedekle" Database_Yedekle.py
+        shell: pwsh
+        run: |
+          $common = @("--noconfirm","--clean","--onefile","--windowed","--icon","Database-Yedekle.ico","--collect-all","googleapiclient","--collect-all","google_auth_oauthlib","--collect-all","google.auth","--name","Database Yedekle","Database_Yedekle.py")
+          if (Test-Path client_secrets.json) {
+            python -m PyInstaller @common --add-data "client_secrets.json;."
+          } else {
+            python -m PyInstaller @common
+          }
 
       - name: Create distribution package
         shell: pwsh
