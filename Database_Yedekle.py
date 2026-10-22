@@ -51,17 +51,20 @@ class App(tk.Tk):
         self.after(3000, self._scheduler)
 
     def _set_app_icon(self):
-        # Uygulama simgesi: yedekleme veritabanı ve bulut işareti.
+        # Layered cyan/violet database mark, matched to the refreshed interface.
         try:
             from PIL import Image, ImageDraw, ImageTk
-            im = Image.new("RGBA", (64, 64), "#10284a")
+            im = Image.new("RGBA", (64, 64), "#0B1020")
             d = ImageDraw.Draw(im)
-            d.rounded_rectangle((7, 7, 45, 52), radius=10, fill="#173e6a", outline="#55d8ff", width=3)
-            d.ellipse((10, 9, 42, 22), fill="#10284a", outline="#55d8ff", width=3)
-            d.arc((10, 16, 42, 29), 0, 180, fill="#55d8ff", width=3)
-            d.arc((10, 27, 42, 40), 0, 180, fill="#55d8ff", width=3)
-            d.ellipse((34, 33, 57, 55), fill="#2695ff", outline="#b8f2ff", width=2)
-            d.line((39, 44, 44, 49, 52, 39), fill="white", width=3)
+            d.polygon([(32, 4), (56, 18), (32, 32), (8, 18)], fill="#22D3EE", outline="#A5F3FC")
+            d.line([(8, 18), (32, 32), (56, 18)], fill="#E0F2FE", width=2)
+            d.polygon([(8, 18), (32, 32), (32, 42), (8, 28)], fill="#0E7490", outline="#22D3EE")
+            d.polygon([(56, 18), (32, 32), (32, 42), (56, 28)], fill="#5B21B6", outline="#8B5CF6")
+            d.polygon([(32, 18), (49, 28), (32, 38), (15, 28)], fill="#7C3AED", outline="#A78BFA")
+            d.polygon([(15, 28), (32, 38), (32, 48), (15, 38)], fill="#4C1D95", outline="#8B5CF6")
+            d.polygon([(49, 28), (32, 38), (32, 48), (49, 38)], fill="#312E81", outline="#6366F1")
+            d.polygon([(32, 11), (49, 21), (32, 31), (15, 21)], fill="#22D3EE", outline="#A5F3FC")
+            d.line([(15, 21), (32, 31), (49, 21)], fill="#E0F2FE", width=1)
             self._icon_image = ImageTk.PhotoImage(im)
             self.iconphoto(True, self._icon_image)
         except Exception:
