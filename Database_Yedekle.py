@@ -1,4 +1,4 @@
-import os, sys, json, shutil, subprocess, threading, tkinter as tk
+import os, sys, json, shutil, subprocess, threading, tkinter as tk, webbrowser
 from tkinter import ttk, messagebox, filedialog, simpledialog
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -295,7 +295,24 @@ class App(tk.Tk):
         client="sqlcmd" if typ=="SQL Server" else "psql"
         exe=tool(client)
         if not exe:
-            messagebox.showwarning("İstemci aracı bulunamadı",f"{client} bu bilgisayarda bulunamadı. Otomatik arama için ilgili komut satırı aracı gerekir. Kurulu SQL Server örnekleri ve istemci araçlarının algılanması sonraki iyileştirme adımıdır.")
+            if typ == "SQL Server":
+                detail = (
+                    "SQL Server istemci aracı (sqlcmd) bu bilgisayarda bulunamadı.\\n\\n"
+                    "Bu araç SQL Server'a bağlanıp veritabanlarını taramak ve .bak yedeğini başlatmak için gerekir.\\n"
+                    "SQL Server Management Studio tek başına sqlcmd aracının kurulu olduğunu garanti etmez.\\n\\n"
+                    "Kurulum sayfasını açayım mı?"
+                )
+                url = "https://learn.microsoft.com/sql/tools/sqlcmd/sqlcmd-utility"
+            else:
+                detail = (
+                    "PostgreSQL istemci araçları (psql / pg_dump) bu bilgisayarda bulunamadı.\\n\\n"
+                    "psql otomatik tarama, pg_dump ise yedek alma için kullanılır.\\n"
+                    "PostgreSQL kurulumunda Command Line Tools bileşenini seç veya PostgreSQL'in bin klasörünü PATH'e ekle.\\n\\n"
+                    "İndirme sayfasını açayım mı?"
+                )
+                url = "https://www.postgresql.org/download/windows/"
+            if messagebox.askyesno("Veritabanı aracı gerekli", detail, parent=self):
+                webbrowser.open(url)
             self.status.set(f"Otomatik arama yapılamadı: {client} bulunamadı.")
             return
         self.status.set("Yerel veritabanları taranıyor…")
