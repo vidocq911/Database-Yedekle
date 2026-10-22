@@ -313,22 +313,63 @@ class App(tk.Tk):
             )
         creds=None
         if token.exists():
-            try:creds=Credentials.from_authorized_user_file(str(token),SCOPES)
-            except Exception:pass
-        if creds and creds.expired and creds.refresh_token:creds.refresh(Request())
+            try:
+                creds=Credentials.from_authorized_user_file(str(token),SCOPES)
+            except Exception:
+                creds=None
+        # Expired/revoked tokens must not permanently block sign-in. If refresh
+        # fails (e.g. invalid_grant), discard the stale token and authorize again.
+        if creds and creds.expired and creds.refresh_token:
+            try:
+                creds.refresh(Request())
+            except Exception:
+                creds=None
+                try: token.unlink(missing_ok=True)
+                except OSError: pass
         if not creds or not creds.valid:
             flow=InstalledAppFlow.from_client_secrets_file(str(secrets),SCOPES)
-            creds=flow.run_local_server(port=0)
+            # Explicit offline access ensures a refresh token can be issued.
+            # Consent may be shown again; this is preferable to saving a token
+            # that expires and leaves unattended scheduled backups broken.
+            creds=flow.run_local_server(port=0,access_type="offline",prompt="consent")
             token.write_text(creds.to_json(),encoding="utf-8")
         return build("drive","v3",credentials=creds,cache_discovery=False)
 
     def connect_google(self):
         try:
             svc=self._config_credentials()
-            email=svc.about().get(fields="user(emailAddress)").execute().get("user",{}).get("emailAddress","Google hesabı")
-            messagebox.showinfo("Google Drive",f"Bağlandı: {email}")
-            self.status.set("Google Drive bağlantısı hazır.")
-        except Exception as e:messagebox.showerror("Google Drive bağlantısı",str(e))
+            # drive.file does not grant the broader account metadata scope needed
+            # by about.get(). Validate with a Drive files.list call instead.
+            svc.files().list(q="trashed=false",pageSize=1,fields="files(id,name)").execute()
+            messagebox.showinfo(
+                "Google Drive",
+                "Google Drive bağlantısı doğrulandı. Yedekler uygulamanın erişebildiği "
+                "Drive alanına yüklenebilir.",
+                parent=self,
+            )
+            self.status.set("Google Drive bağlantısı doğrulandı.")
+        except Exception as e:
+            detail=str(e)
+            low=detail.lower()
+            if "access_denied" in low or "access blocked" in low or "app_not_configured_for_user" in low:
+                detail += (
+                    "\\n\\nGoogle OAuth izin ekranı uygulamayı engelliyor olabilir. "
+                    "Google Cloud Console > Google Auth Platform > Audience bölümünde "
+                    "uygulama Testing durumundaysa hesabını Test users listesine ekle. "
+                    "Genel kullanıcılara dağıtmak için Google'ın doğrulama süreci gerekir."
+                )
+            elif "invalid_client" in low or "client_secret" in low or "client id" in low:
+                detail += (
+                    "\\n\\nGitHub Actions secret GOOGLE_OAUTH_CLIENT_JSON içinde "
+                    "Google Cloud Console'dan alınmış OAuth Client ID türü Desktop app "
+                    "JSON dosyası bulunmalı."
+                )
+            elif "insufficient" in low or "403" in low:
+                detail += (
+                    "\\n\\nDrive API'nin Google Cloud projesinde etkin olduğunu ve "
+                    "uygulamanın drive.file iznini istediğini kontrol et."
+                )
+            messagebox.showerror("Google Drive bağlantısı",detail,parent=self)
 
     def disconnect_google(self):
         token=self._config_dir()/"google_token.json"
