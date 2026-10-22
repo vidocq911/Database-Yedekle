@@ -30,6 +30,12 @@ class App(tk.Tk):
         self.dbtype = tk.StringVar(value="SQL Server")
         self.local = tk.StringVar(value=str(Path.home()/"DatabaseBackups"))
         self.drive_folder = tk.StringVar(value="DatabaseBackups")
+        self.target = tk.StringVar(value="Google Drive")
+        self.qnap_host = tk.StringVar(value="")
+        self.qnap_port = tk.StringVar(value="22")
+        self.qnap_user = tk.StringVar(value="")
+        self.qnap_password = tk.StringVar(value="")
+        self.qnap_path = tk.StringVar(value="/share/Backups")
         self.interval = tk.StringVar(value="Günlük")
         self.auto = tk.BooleanVar(value=False)
         self.shrink = tk.BooleanVar(value=False)
@@ -69,7 +75,7 @@ class App(tk.Tk):
         self.dbtab=ttk.Frame(self.tabs,padding=12);self.schedtab=ttk.Frame(self.tabs,padding=18);self.storagetab=ttk.Frame(self.tabs,padding=18)
         self.tabs.add(self.dbtab,text="  Veritabanları  ")
         self.tabs.add(self.schedtab,text="  Otomatik Yedekleme  ")
-        self.tabs.add(self.storagetab,text="  Kayıt ve Google Drive  ")
+        self.tabs.add(self.storagetab,text="  Yedekleme Hedefi  ")
         self._build_db();self._build_schedule();self._build_storage()
         foot=ttk.Frame(shell);foot.pack(fill="x",pady=(12,0))
         ttk.Label(foot,textvariable=self.status,style="Muted.TLabel").pack(side="left",fill="x",expand=True)
@@ -121,18 +127,31 @@ class App(tk.Tk):
         ttk.Label(self.schedtab,text="Öneri: Dosya boyutunu azaltmak için önce sıkıştırılmış yedeği kullan. Shrink işlemi veritabanı performansını etkileyebilir.",wraplength=760,style="Muted.TLabel").pack(anchor="w")
 
     def _build_storage(self):
-        ttk.Label(self.storagetab,text="Yedeklerin kaydedileceği yer",style="Title.TLabel").pack(anchor="w")
-        ttk.Label(self.storagetab,text="Yerel kopya ve Google Drive hedefi burada belirlenir.",style="Muted.TLabel").pack(anchor="w",pady=(4,18))
+        ttk.Label(self.storagetab,text="Yedekleme hedefi",style="Title.TLabel").pack(anchor="w")
+        ttk.Label(self.storagetab,text="Yedekler seçtiğin hedefe doğrudan gönderilir; aracı sunucu yoktur.",style="Muted.TLabel").pack(anchor="w",pady=(4,10))
+        targetrow=ttk.Frame(self.storagetab);targetrow.pack(fill="x",pady=(0,10))
+        ttk.Label(targetrow,text="Hedef").pack(side="left")
+        ttk.Combobox(targetrow,textvariable=self.target,values=["Yerel klasör","Google Drive","QNAP / SFTP"],state="readonly",width=20).pack(side="left",padx=8)
         ttk.Label(self.storagetab,text="Yerel yedek klasörü",style="Section.TLabel").pack(anchor="w")
-        row=ttk.Frame(self.storagetab);row.pack(fill="x",pady=(6,18))
+        row=ttk.Frame(self.storagetab);row.pack(fill="x",pady=(4,10))
         ttk.Entry(row,textvariable=self.local).pack(side="left",fill="x",expand=True)
         ttk.Button(row,text="Klasör seç…",command=self.browse).pack(side="left",padx=(8,0))
-        ttk.Label(self.storagetab,text="Google Drive'daki ana klasör adı",style="Section.TLabel").pack(anchor="w")
-        ttk.Entry(self.storagetab,textvariable=self.drive_folder,width=45).pack(anchor="w",fill="x",pady=(6,5))
-        ttk.Label(self.storagetab,text="Uygulama, tarih bazında alt klasör oluşturur. Örn. DatabaseBackups / 2026-10-22",style="Muted.TLabel").pack(anchor="w")
-        ttk.Separator(self.storagetab).pack(fill="x",pady=18)
-        ttk.Label(self.storagetab,text="Google hesabı",style="Section.TLabel").pack(anchor="w")
-        ttk.Label(self.storagetab,text="İlk bağlantı için OAuth istemci yapılandırması gerekir. Bağlandıktan sonra yetki bu Windows kullanıcısının AppData klasöründe saklanır.",wraplength=760,style="Muted.TLabel").pack(anchor="w",pady=(6,0))
+        ttk.Label(self.storagetab,text="Google Drive klasör adı").pack(anchor="w")
+        ttk.Entry(self.storagetab,textvariable=self.drive_folder).pack(fill="x",pady=(3,8))
+        ttk.Label(self.storagetab,text="Uzak QNAP / SFTP bağlantısı",style="Section.TLabel").pack(anchor="w",pady=(4,4))
+        grid=ttk.Frame(self.storagetab);grid.pack(fill="x")
+        for col, (label,var,width,show) in enumerate([("Sunucu / IP",self.qnap_host,28,None),("Port",self.qnap_port,7,None),("Kullanıcı",self.qnap_user,18,None),("Parola",self.qnap_password,18,"*")]):
+            cell=ttk.Frame(grid);cell.grid(row=0,column=col,padx=(0,6),sticky="ew")
+            ttk.Label(cell,text=label).pack(anchor="w")
+            ttk.Entry(cell,textvariable=var,width=width,show=show).pack(fill="x")
+            grid.columnconfigure(col,weight=1)
+        ttk.Label(self.storagetab,text="Uzak klasör (örn. /share/Backups veya SFTP ana dizinine göre Backups)").pack(anchor="w",pady=(7,0))
+        ttk.Entry(self.storagetab,textvariable=self.qnap_path).pack(fill="x",pady=(3,8))
+        statusrow=ttk.Frame(self.storagetab);statusrow.pack(fill="x",pady=(2,8))
+        ttk.Button(statusrow,text="Google hesabını bağla",command=self.connect_google).pack(side="left")
+        ttk.Button(statusrow,text="Google bağlantısını kes / hesabı unut",command=self.disconnect_google).pack(side="left",padx=6)
+        ttk.Button(statusrow,text="QNAP bağlantısını test et",command=self.test_sftp).pack(side="left",padx=6)
+        ttk.Label(self.storagetab,text="Google belirteci bu Windows kullanıcısının AppData alanında tutulur. Ortak bilgisayarda bağlantıyı kes. QNAP parolası ayarlarda kaydedilir; hassas cihazlarda kullanımdan sonra temizle.",wraplength=760,style="Muted.TLabel").pack(anchor="w",pady=(4,0))
 
     def _config_dir(self):
         p=Path(os.getenv("APPDATA",str(Path.home())))/"DatabaseYedekle";p.mkdir(parents=True,exist_ok=True);return p
@@ -141,6 +160,7 @@ class App(tk.Tk):
         try:
             d=json.loads((self._config_dir()/"settings.json").read_text(encoding="utf-8"))
             self.items=d.get("items",[]);self.local.set(d.get("local",self.local.get()));self.drive_folder.set(d.get("drive_folder","DatabaseBackups"))
+            self.target.set(d.get("target","Google Drive"));self.qnap_host.set(d.get("qnap_host",""));self.qnap_port.set(d.get("qnap_port","22"));self.qnap_user.set(d.get("qnap_user",""));self.qnap_password.set(d.get("qnap_password",""));self.qnap_path.set(d.get("qnap_path","/share/Backups"))
             self.auto.set(d.get("auto",False));self.interval.set(d.get("interval","Günlük"));self.shrink.set(d.get("shrink",False));self.refresh()
             try:self.last_run.set(json.loads((self._config_dir()/"last.json").read_text())["timestamp"])
             except Exception:pass
@@ -148,7 +168,7 @@ class App(tk.Tk):
 
     def save(self):
         try:
-            d={"items":self.items,"local":self.local.get(),"drive_folder":self.drive_folder.get(),"auto":self.auto.get(),"interval":self.interval.get(),"shrink":self.shrink.get()}
+            d={"items":self.items,"local":self.local.get(),"drive_folder":self.drive_folder.get(),"auto":self.auto.get(),"interval":self.interval.get(),"shrink":self.shrink.get(),"target":self.target.get(),"qnap_host":self.qnap_host.get(),"qnap_port":self.qnap_port.get(),"qnap_user":self.qnap_user.get(),"qnap_password":self.qnap_password.get(),"qnap_path":self.qnap_path.get()}
             (self._config_dir()/"settings.json").write_text(json.dumps(d,ensure_ascii=False,indent=2),encoding="utf-8")
         except Exception as e:self.status.set("Ayar kaydedilemedi: "+str(e))
 
@@ -183,6 +203,33 @@ class App(tk.Tk):
             messagebox.showinfo("Google Drive",f"Bağlandı: {email}")
             self.status.set("Google Drive bağlantısı hazır.")
         except Exception as e:messagebox.showerror("Google Drive bağlantısı",str(e))
+
+    def disconnect_google(self):
+        token=self._config_dir()/"google_token.json"
+        try:
+            if token.exists(): token.unlink()
+            self.status.set("Google bağlantısı kaldırıldı; yerel belirteç silindi.")
+            messagebox.showinfo("Google bağlantısı","Bu bilgisayardaki yerel Google belirteci silindi. Tam erişim iptali için Google Hesabı > Güvenlik > Üçüncü taraf bağlantıları bölümünden de uygulama erişimini kaldır.")
+        except Exception as e: messagebox.showerror("Bağlantı kesilemedi",str(e))
+
+    def _sftp_connect(self):
+        import paramiko
+        host=self.qnap_host.get().strip()
+        if not host: raise RuntimeError("QNAP sunucu adresini gir.")
+        try: port=int(self.qnap_port.get().strip() or "22")
+        except ValueError: raise RuntimeError("SFTP portu sayısal olmalı.")
+        transport=paramiko.Transport((host,port))
+        transport.connect(username=self.qnap_user.get().strip(),password=self.qnap_password.get())
+        return paramiko.SFTPClient.from_transport(transport),transport
+
+    def test_sftp(self):
+        try:
+            client,transport=self._sftp_connect()
+            client.listdir(self.qnap_path.get().strip() or ".")
+            client.close();transport.close()
+            self.status.set("QNAP / SFTP bağlantısı başarılı.")
+            messagebox.showinfo("QNAP bağlantısı","SFTP bağlantısı başarılı; uzak klasör okunabiliyor.")
+        except Exception as e: messagebox.showerror("QNAP bağlantısı başarısız",str(e))
 
     def scan(self):
         typ=self.dbtype.get()
@@ -292,11 +339,21 @@ class App(tk.Tk):
 
     def _backup_worker(self,items):
         try:
-            service=self._config_credentials()
-            from googleapiclient.http import MediaFileUpload
-            root=self._drive_folder(service,self.drive_folder.get().strip() or "DatabaseBackups")
-            date_id=self._drive_folder(service,datetime.now().strftime("%Y-%m-%d"),root)
+            service=None; sftp=None; transport=None; remote_day=None
+            target=self.target.get()
             outdir=Path(self.local.get())/datetime.now().strftime("%Y-%m-%d");outdir.mkdir(parents=True,exist_ok=True)
+            if target=="Google Drive":
+                service=self._config_credentials()
+                root=self._drive_folder(service,self.drive_folder.get().strip() or "DatabaseBackups")
+                remote_day=self._drive_folder(service,datetime.now().strftime("%Y-%m-%d"),root)
+            elif target=="QNAP / SFTP":
+                sftp,transport=self._sftp_connect()
+                remote_root=self.qnap_path.get().strip() or "."
+                try:sftp.stat(remote_root)
+                except IOError:raise RuntimeError("QNAP üzerindeki uzak klasör bulunamadı. QNAP'ta oluştur veya doğru yolu gir.")
+                remote_day=remote_root.rstrip("/")+"/"+datetime.now().strftime("%Y-%m-%d")
+                try:sftp.mkdir(remote_day)
+                except IOError:pass
             for x in items:
                 self.after(0,lambda db=x["db"]:self.status.set("Yedekleniyor: "+db))
                 stamp=datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -318,14 +375,25 @@ class App(tk.Tk):
                     if x.get("user"):cmd[1:1]=["-U",x["user"]]
                 p=subprocess.run(cmd,capture_output=True,text=True,timeout=3600,creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
                 if p.returncode:raise RuntimeError((p.stderr or p.stdout or "Yedek komutu başarısız").strip())
-                service.files().create(body={"name":out.name,"parents":[date_id]},media_body=MediaFileUpload(str(out),resumable=True),fields="id").execute()
-                self.after(0,lambda n=out.name:self.status.set("Yüklendi: "+n))
+                if target=="Google Drive":
+                    from googleapiclient.http import MediaFileUpload
+                    service.files().create(body={"name":out.name,"parents":[remote_day]},media_body=MediaFileUpload(str(out),resumable=True),fields="id").execute()
+                    self.after(0,lambda n=out.name:self.status.set("Google Drive'a yüklendi: "+n))
+                elif target=="QNAP / SFTP":
+                    sftp.put(str(out),remote_day+"/"+out.name)
+                    self.after(0,lambda n=out.name:self.status.set("QNAP'a yüklendi: "+n))
+                else:
+                    self.after(0,lambda n=out.name:self.status.set("Yerel yedek oluşturuldu: "+n))
             now=datetime.now().isoformat(timespec="seconds")
             (self._config_dir()/"last.json").write_text(json.dumps({"timestamp":now}),encoding="utf-8")
             self.after(0,lambda:self.last_run.set(now))
             self.after(0,lambda:self.status.set("Yedekleme tamamlandı."))
         except Exception as e:self.after(0,lambda err=str(e):messagebox.showerror("Yedekleme başarısız",err))
         finally:
+            try:
+                if sftp: sftp.close()
+                if transport: transport.close()
+            except Exception: pass
             self.running=False
 
     def _drive_folder(self,service,name,parent=None):
