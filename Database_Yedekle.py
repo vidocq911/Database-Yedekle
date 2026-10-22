@@ -160,7 +160,7 @@ class App(tk.Tk):
         try:
             d=json.loads((self._config_dir()/"settings.json").read_text(encoding="utf-8"))
             self.items=d.get("items",[]);self.local.set(d.get("local",self.local.get()));self.drive_folder.set(d.get("drive_folder","DatabaseBackups"))
-            self.target.set(d.get("target","Google Drive"));self.qnap_host.set(d.get("qnap_host",""));self.qnap_port.set(d.get("qnap_port","22"));self.qnap_user.set(d.get("qnap_user",""));self.qnap_password.set(d.get("qnap_password",""));self.qnap_path.set(d.get("qnap_path","/share/Backups"))
+            self.target.set(d.get("target","Google Drive"));self.qnap_host.set(d.get("qnap_host",""));self.qnap_port.set(d.get("qnap_port","22"));self.qnap_user.set(d.get("qnap_user",""));self.qnap_password.set("");self.qnap_path.set(d.get("qnap_path","/share/Backups"))
             self.auto.set(d.get("auto",False));self.interval.set(d.get("interval","Günlük"));self.shrink.set(d.get("shrink",False));self.refresh()
             try:self.last_run.set(json.loads((self._config_dir()/"last.json").read_text())["timestamp"])
             except Exception:pass
@@ -168,7 +168,7 @@ class App(tk.Tk):
 
     def save(self):
         try:
-            d={"items":self.items,"local":self.local.get(),"drive_folder":self.drive_folder.get(),"auto":self.auto.get(),"interval":self.interval.get(),"shrink":self.shrink.get(),"target":self.target.get(),"qnap_host":self.qnap_host.get(),"qnap_port":self.qnap_port.get(),"qnap_user":self.qnap_user.get(),"qnap_password":self.qnap_password.get(),"qnap_path":self.qnap_path.get()}
+            d={"items":self.items,"local":self.local.get(),"drive_folder":self.drive_folder.get(),"auto":self.auto.get(),"interval":self.interval.get(),"shrink":self.shrink.get(),"target":self.target.get(),"qnap_host":self.qnap_host.get(),"qnap_port":self.qnap_port.get(),"qnap_user":self.qnap_user.get(),"qnap_path":self.qnap_path.get()}
             (self._config_dir()/"settings.json").write_text(json.dumps(d,ensure_ascii=False,indent=2),encoding="utf-8")
         except Exception as e:self.status.set("Ayar kaydedilemedi: "+str(e))
 
