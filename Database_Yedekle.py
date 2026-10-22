@@ -71,43 +71,55 @@ class App(tk.Tk):
         s=ttk.Style(self)
         try:s.theme_use("clam")
         except tk.TclError:pass
+        # Premium dark dashboard palette inspired by Databasement's layered
+        # cyan/violet visual identity; application name and functions stay ours.
         s.configure("TFrame",background=BG)
         s.configure("TLabel",background=BG,foreground=NAVY,font=("Segoe UI",10))
-        s.configure("Muted.TLabel",foreground=MUTED,font=("Segoe UI",9))
-        s.configure("Title.TLabel",font=("Segoe UI",20,"bold"),foreground=NAVY)
-        s.configure("Section.TLabel",font=("Segoe UI",11,"bold"),foreground=NAVY)
-        s.configure("TButton",font=("Segoe UI",10),padding=(11,7),background="#E8EEF6",foreground=NAVY,borderwidth=0)
-        s.map("TButton",background=[("active","#D7E4F5")],foreground=[("active",NAVY)])
-        s.configure("Primary.TButton",font=("Segoe UI",10,"bold"),padding=(14,8),background=BLUE,foreground="white")
-        s.map("Primary.TButton",background=[("active","#1D4ED8")],foreground=[("active","white")])
-        s.configure("Treeview",rowheight=30,font=("Segoe UI",10),background=CARD,fieldbackground=CARD,foreground=NAVY,borderwidth=0)
-        s.configure("Treeview.Heading",font=("Segoe UI",10,"bold"),background="#E8EEF6",foreground=NAVY,padding=10)
-        # Keep notebook tabs on a single visual baseline; remove the default
-        # platform-dependent raised/stepped tab treatment.
+        s.configure("Muted.TLabel",background=BG,foreground=MUTED,font=("Segoe UI",9))
+        s.configure("Title.TLabel",background=BG,font=("Segoe UI",21,"bold"),foreground=NAVY)
+        s.configure("Section.TLabel",background=BG,font=("Segoe UI",11,"bold"),foreground=NAVY)
+        s.configure("Eyebrow.TLabel",background=BG,foreground="#22D3EE",font=("Segoe UI",8,"bold"))
+        s.configure("TButton",font=("Segoe UI",10),padding=(11,8),background="#202B43",foreground="#DCE7FF",borderwidth=0,relief="flat")
+        s.map("TButton",background=[("active","#303D59"),("disabled","#182136")],foreground=[("active","#FFFFFF")])
+        s.configure("Primary.TButton",font=("Segoe UI",10,"bold"),padding=(15,9),background="#7C3AED",foreground="white",borderwidth=0,relief="flat")
+        s.map("Primary.TButton",background=[("active","#8B5CF6"),("pressed","#6D28D9")],foreground=[("active","white")])
+        s.configure("Treeview",rowheight=32,font=("Segoe UI",10),background=CARD,fieldbackground=CARD,foreground="#DCE7FF",borderwidth=0,relief="flat")
+        s.configure("Treeview.Heading",font=("Segoe UI",9,"bold"),background="#202B43",foreground="#AFC2E8",padding=10,relief="flat")
+        s.map("Treeview",background=[("selected","#3730A3")],foreground=[("selected","#FFFFFF")])
+        s.configure("TCombobox",fieldbackground=CARD,background="#202B43",foreground="#E7EEFF",arrowcolor="#22D3EE",padding=7)
+        s.map("TCombobox",fieldbackground=[("readonly",CARD)],foreground=[("readonly","#E7EEFF")])
+        s.configure("TEntry",fieldbackground=CARD,foreground="#E7EEFF",insertcolor="#FFFFFF",padding=7)
+        s.configure("TCheckbutton",background=BG,foreground="#DCE7FF",font=("Segoe UI",10))
+        s.map("TCheckbutton",background=[("active",BG)],foreground=[("active","#FFFFFF")])
         s.configure("TNotebook",background=BG,borderwidth=0,tabmargins=(0,0,0,0),padding=0)
-        s.configure("TNotebook.Tab",padding=(20,12),font=("Segoe UI",10,"bold"),background="#E7EDF5",foreground=MUTED,borderwidth=0,relief="flat")
+        s.configure("TNotebook.Tab",padding=(20,13),font=("Segoe UI",10,"bold"),background="#151E32",foreground="#8393B3",borderwidth=0,relief="flat")
         s.map("TNotebook.Tab",
-              background=[("selected",CARD),("active","#DCE9FA")],
-              foreground=[("selected",BLUE),("active",NAVY)],
-              padding=[("selected",(20,12)),("!selected",(20,12))],
+              background=[("selected",CARD),("active","#202B43")],
+              foreground=[("selected","#22D3EE"),("active","#E7EEFF")],
+              padding=[("selected",(20,13)),("!selected",(20,13))],
               relief=[("selected","flat"),("!selected","flat")])
 
     def _build(self):
-        shell=ttk.Frame(self,padding=10); shell.pack(fill="both",expand=True)
-        head=ttk.Frame(shell);head.pack(fill="x",pady=(0,7))
-        logo=tk.Canvas(head,width=42,height=42,bg=BG,highlightthickness=0)
-        logo.pack(side="left",padx=(0,10))
-        logo.create_rounded_rectangle = None
-        logo.create_oval(3,3,37,17,fill="#10284a",outline="#2695ff",width=2)
-        logo.create_rectangle(3,10,37,31,fill="#173e6a",outline="#2695ff",width=2)
-        logo.create_arc(3,18,37,32,start=0,extent=180,style="arc",outline="#55d8ff",width=2)
-        logo.create_oval(23,22,41,40,fill="#2695ff",outline="#b8f2ff",width=1)
-        logo.create_line(27,31,31,35,37,27,fill="white",width=2)
+        shell=ttk.Frame(self,padding=14); shell.pack(fill="both",expand=True)
+        head=ttk.Frame(shell);head.pack(fill="x",pady=(0,13))
+        logo=tk.Canvas(head,width=58,height=58,bg=BG,highlightthickness=0)
+        logo.pack(side="left",padx=(0,12))
+        # Layered isometric database mark: cyan edges with violet depth,
+        # a visual nod to the upstream project's dimensional logo.
+        logo.create_polygon(29,3,53,17,29,31,5,17,fill="#22D3EE",outline="#67E8F9",width=1)
+        logo.create_polygon(5,17,29,31,29,39,5,25,fill="#0E7490",outline="#22D3EE",width=1)
+        logo.create_polygon(53,17,29,31,29,39,53,25,fill="#5B21B6",outline="#8B5CF6",width=1)
+        logo.create_polygon(29,15,47,25,29,35,11,25,fill="#7C3AED",outline="#A78BFA",width=1)
+        logo.create_polygon(11,25,29,35,29,43,11,33,fill="#4C1D95",outline="#8B5CF6",width=1)
+        logo.create_polygon(47,25,29,35,29,43,47,33,fill="#312E81",outline="#6366F1",width=1)
+        logo.create_polygon(29,8,47,18,29,28,11,18,fill="#22D3EE",outline="#A5F3FC",width=1)
+        logo.create_line(11,18,29,28,47,18,fill="#E0F2FE",width=1)
         headtext=ttk.Frame(head);headtext.pack(side="left",fill="x",expand=True)
-        ttk.Label(headtext,text="Database Yedekle",style="Title.TLabel").pack(anchor="w")
-        ttk.Label(headtext,text="Güvenli yedekleme merkezi  •  SQL Server  •  PostgreSQL  •  Bulut ve NAS",style="Muted.TLabel").pack(anchor="w",pady=(4,0))
-        ttk.Button(head,text="Demo / Müşteri Kaydı",command=self.open_demo_registration).pack(side="right",padx=(8,0))
-        ttk.Button(head,text="Destek",command=lambda:webbrowser.open("https://github.com/vidocq911/Database-Yedekle/issues")).pack(side="right")
+        ttk.Label(headtext,text="DATABASE Yedekle  /  BACKUP CONTROL",style="Eyebrow.TLabel").pack(anchor="w",pady=(1,2))
+        ttk.Label(headtext,text="Güvenli yedekleme merkezi",style="Title.TLabel").pack(anchor="w")
+        ttk.Label(headtext,text="SQL SERVER   •   POSTGRESQL   •   GOOGLE DRIVE   •   QNAP / SFTP",style="Muted.TLabel").pack(anchor="w",pady=(3,0))
+        ttk.Button(head,text="Demo / Müşteri Kaydı",command=self.open_demo_registration).pack(side="right",padx=(8,0),pady=(8,0))
+        ttk.Button(head,text="Destek",command=lambda:webbrowser.open("https://github.com/vidocq911/Database-Yedekle/issues")).pack(side="right",pady=(8,0))
         self.tabs=ttk.Notebook(shell);self.tabs.pack(fill="both",expand=True)
         self.dbtab=ttk.Frame(self.tabs,padding=7);self.schedtab=ttk.Frame(self.tabs,padding=8);self.storagetab=ttk.Frame(self.tabs,padding=8)
         self.tabs.add(self.dbtab,text="  Veritabanları  ")
