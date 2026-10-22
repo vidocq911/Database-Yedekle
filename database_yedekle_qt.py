@@ -3,6 +3,7 @@ from pathlib import Path
 from datetime import datetime
 from PySide6.QtCore import Qt,Signal,QObject
 from PySide6.QtGui import QColor,QPainter,QPen,QIcon,QPixmap,QFont
+from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import *
 APP="Database Yedekle"; BG="#0B1020"; PANEL="#111A2E"; PANEL2="#17233A"; LINE="#263650"; FG="#E8F0FF"; MUTED="#91A4C5"; CYAN="#22D3EE"; PURPLE="#8B5CF6"
 SUPABASE="https://hkuoymftockxmynrcjwh.supabase.co"
@@ -15,6 +16,14 @@ def cli(name):
     p=asset(name)
     return str(p) if p.exists() else shutil.which(name)
 def db_icon(kind,size=40):
+    logo_file={"SQL Server":"sql-server-logo.svg","PostgreSQL":"postgresql-logo.svg"}.get(kind)
+    if logo_file:
+        pth=asset(logo_file)
+        if pth.exists():
+            pix=QPixmap(size,size);pix.fill(Qt.GlobalColor.transparent);p=QPainter(pix);p.setRenderHint(QPainter.RenderHint.Antialiasing)
+            renderer=QSvgRenderer(str(pth))
+            if renderer.isValid():renderer.render(p);p.end();return pix
+            p.end()
     pix=QPixmap(size,size); pix.fill(Qt.GlobalColor.transparent); p=QPainter(pix); p.setRenderHint(QPainter.RenderHint.Antialiasing)
     if kind=="app":
         p.setPen(QPen(QColor("#5575A8"),1.4));p.setBrush(QColor("#233B5B"));p.drawRoundedRect(size*.10,size*.13,size*.80,size*.72,size*.13,size*.13)
