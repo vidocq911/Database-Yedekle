@@ -40,6 +40,11 @@ class App(tk.Tk):
         self.qnap_user = tk.StringVar(value="")
         self.qnap_password = tk.StringVar(value="")
         self.qnap_path = tk.StringVar(value="/share/Backups")
+        self.s3_endpoint = tk.StringVar(value="")
+        self.s3_bucket = tk.StringVar(value="")
+        self.s3_region = tk.StringVar(value="us-east-1")
+        self.s3_access_key = tk.StringVar(value="")
+        self.s3_secret_key = tk.StringVar(value="")
         self.interval = tk.StringVar(value="Günlük")
         self.auto = tk.BooleanVar(value=False)
         self.shrink = tk.BooleanVar(value=False)
@@ -286,7 +291,7 @@ class App(tk.Tk):
         ttk.Label(self.storagetab,text="Yedekler seçtiğin hedefe doğrudan gönderilir; aracı sunucu yoktur.",style="Muted.TLabel").pack(anchor="w",pady=(4,10))
         targetrow=ttk.Frame(self.storagetab);targetrow.pack(fill="x",pady=(0,10))
         ttk.Label(targetrow,text="Hedef").pack(side="left")
-        ttk.Combobox(targetrow,textvariable=self.target,values=["Yerel klasör","Google Drive","Dropbox","QNAP / SFTP"],state="readonly",width=20).pack(side="left",padx=8)
+        ttk.Combobox(targetrow,textvariable=self.target,values=["Yerel klasör","Google Drive","Dropbox","QNAP / SFTP","S3 uyumlu depolama"],state="readonly",width=20).pack(side="left",padx=8)
         ttk.Label(self.storagetab,text="Yerel yedek klasörü",style="Section.TLabel").pack(anchor="w")
         row=ttk.Frame(self.storagetab);row.pack(fill="x",pady=(4,10))
         ttk.Entry(row,textvariable=self.local).pack(side="left",fill="x",expand=True)
@@ -308,6 +313,12 @@ class App(tk.Tk):
         ttk.Button(statusrow,text="Dropbox hesabını bağla",command=self.connect_dropbox).pack(side="left",padx=6)
         ttk.Button(statusrow,text="Dropbox bağlantısını kes",command=self.disconnect_dropbox).pack(side="left",padx=6)
         ttk.Button(statusrow,text="QNAP bağlantısını test et",command=self.test_sftp).pack(side="left",padx=6)
+        ttk.Label(self.storagetab,text="S3 uyumlu depolama (AWS S3 / Cloudflare R2 / MinIO)").pack(anchor="w",pady=(8,2))
+        s3grid=ttk.Frame(self.storagetab);s3grid.pack(fill="x")
+        for col,(label,var,width,show) in enumerate([("Endpoint URL",self.s3_endpoint,22,None),("Bucket",self.s3_bucket,14,None),("Region",self.s3_region,10,None),("Access key",self.s3_access_key,15,None),("Secret key",self.s3_secret_key,15,"*")]):
+            cell=ttk.Frame(s3grid);cell.grid(row=0,column=col,padx=(0,4),sticky="ew")
+            ttk.Label(cell,text=label).pack(anchor="w");ttk.Entry(cell,textvariable=var,width=width,show=show).pack(fill="x")
+            s3grid.columnconfigure(col,weight=1)
         ttk.Label(self.storagetab,text="Google belirteci bu Windows kullanıcısının AppData alanında tutulur. Ortak bilgisayarda bağlantıyı kes. QNAP parolası ayarlarda kaydedilir; hassas cihazlarda kullanımdan sonra temizle.",wraplength=760,style="Muted.TLabel").pack(anchor="w",pady=(4,0))
 
     def _config_dir(self):
@@ -317,7 +328,7 @@ class App(tk.Tk):
         try:
             d=json.loads((self._config_dir()/"settings.json").read_text(encoding="utf-8"))
             self.items=d.get("items",[]);self.local.set(d.get("local",self.local.get()));self.drive_folder.set(d.get("drive_folder","DatabaseBackups"))
-            self.target.set(d.get("target","Google Drive"));self.qnap_host.set(d.get("qnap_host",""));self.qnap_port.set(d.get("qnap_port","22"));self.qnap_user.set(d.get("qnap_user",""));self.qnap_password.set("");self.qnap_path.set(d.get("qnap_path","/share/Backups"))
+            self.target.set(d.get("target","Google Drive"));self.s3_endpoint.set(d.get("s3_endpoint",""));self.s3_bucket.set(d.get("s3_bucket",""));self.s3_region.set(d.get("s3_region","us-east-1"));self.s3_access_key.set("");self.s3_secret_key.set("");self.qnap_host.set(d.get("qnap_host",""));self.qnap_port.set(d.get("qnap_port","22"));self.qnap_user.set(d.get("qnap_user",""));self.qnap_password.set("");self.qnap_path.set(d.get("qnap_path","/share/Backups"))
             self.auto.set(d.get("auto",False));self.interval.set(d.get("interval","Günlük"));self.shrink.set(d.get("shrink",False));self.refresh()
             try:self.last_run.set(json.loads((self._config_dir()/"last.json").read_text())["timestamp"])
             except Exception:pass
@@ -325,7 +336,7 @@ class App(tk.Tk):
 
     def save(self):
         try:
-            d={"items":self.items,"local":self.local.get(),"drive_folder":self.drive_folder.get(),"auto":self.auto.get(),"interval":self.interval.get(),"shrink":self.shrink.get(),"target":self.target.get(),"qnap_host":self.qnap_host.get(),"qnap_port":self.qnap_port.get(),"qnap_user":self.qnap_user.get(),"qnap_path":self.qnap_path.get()}
+            d={"items":self.items,"local":self.local.get(),"drive_folder":self.drive_folder.get(),"auto":self.auto.get(),"interval":self.interval.get(),"shrink":self.shrink.get(),"target":self.target.get(),"s3_endpoint":self.s3_endpoint.get(),"s3_bucket":self.s3_bucket.get(),"s3_region":self.s3_region.get(),"qnap_host":self.qnap_host.get(),"qnap_port":self.qnap_port.get(),"qnap_user":self.qnap_user.get(),"qnap_path":self.qnap_path.get()}
             (self._config_dir()/"settings.json").write_text(json.dumps(d,ensure_ascii=False,indent=2),encoding="utf-8")
         except Exception as e:self.status.set("Ayar kaydedilemedi: "+str(e))
 
@@ -632,6 +643,12 @@ class App(tk.Tk):
                 try:service.files_create_folder_v2(remote_day)
                 except Exception as e:
                     if "conflict" not in str(e).lower(): raise
+            elif target=="S3 uyumlu depolama":
+                import boto3
+                if not self.s3_bucket.get().strip() or not self.s3_access_key.get().strip() or not self.s3_secret_key.get().strip():
+                    raise RuntimeError("S3 için Bucket, Access key ve Secret key alanlarını doldur.")
+                service=boto3.client("s3",endpoint_url=self.s3_endpoint.get().strip() or None,region_name=self.s3_region.get().strip() or "us-east-1",aws_access_key_id=self.s3_access_key.get().strip(),aws_secret_access_key=self.s3_secret_key.get().strip())
+                remote_day=datetime.now().strftime("%Y-%m-%d")
             elif target=="QNAP / SFTP":
                 sftp,transport=self._sftp_connect()
                 remote_root=self.qnap_path.get().strip() or "."
@@ -670,6 +687,10 @@ class App(tk.Tk):
                     with out.open("rb") as source:
                         service.files_upload(source.read(),remote_day+"/"+out.name,mode=dropbox.files.WriteMode.overwrite)
                     self.after(0,lambda n=out.name:self.status.set("Dropbox'a yüklendi: "+n))
+                elif target=="S3 uyumlu depolama":
+                    key="/".join(part.strip("/") for part in [self.drive_folder.get() or "DatabaseBackups",remote_day,out.name])
+                    service.upload_file(str(out),self.s3_bucket.get().strip(),key)
+                    self.after(0,lambda n=out.name:self.status.set("S3 depolamaya yüklendi: "+n))
                 elif target=="QNAP / SFTP":
                     sftp.put(str(out),remote_day+"/"+out.name)
                     self.after(0,lambda n=out.name:self.status.set("QNAP'a yüklendi: "+n))

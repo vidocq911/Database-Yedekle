@@ -58,16 +58,16 @@ def main():
         # The notebook tabs are arranged left-to-right in the main window.
         # Click each tab and capture its resulting visible layout.
         for index, name in enumerate(("databases", "schedule", "storage")):
-            x = window.left + int(window.width * (0.19 + index * 0.23))
-            y = window.top + 115
+            x = window.left + (105 if index == 0 else 265 if index == 1 else 465)
+            y = window.top + 105
             pyautogui.click(x, y)
             time.sleep(0.7)
             capture(window, f"02-tab-{name}.png")
 
         # Exercise the demo/customer-registration dialog from the header.
         pyautogui.click(
-            window.left + int(window.width * 0.83),
-            window.top + 72,
+            window.left + int(window.width * 0.78),
+            window.top + 65,
         )
         time.sleep(1.2)
         dialogs = [

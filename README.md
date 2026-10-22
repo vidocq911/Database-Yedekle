@@ -1,6 +1,6 @@
 # Database Yedekle (Windows)
 
-Türkçe arayüzlü Windows masaüstü uygulaması. SQL Server ve PostgreSQL yedeklerini yerel diske, Google Drive'a veya QNAP/SFTP hedefine gönderebilir.
+Türkçe arayüzlü Windows masaüstü uygulaması. SQL Server ve PostgreSQL yedeklerini yerel diske, Google Drive, Dropbox, S3 uyumlu depolamaya (AWS S3/Cloudflare R2/MinIO) veya QNAP/SFTP hedefine gönderebilir.
 
 ## EXE indirme
 
@@ -14,8 +14,8 @@ Her `main` dalı güncellemesinde otomatik derleme başlar. Derleme dosyası 30 
 
 ## Gereksinimler
 
-- SQL Server için Microsoft `sqlcmd`; PostgreSQL için `pg_dump` (otomatik tarama ayrıca `psql` kullanır).
-- Google Drive için uygulamanın geliştiricisi GitHub Actions secret `GOOGLE_OAUTH_CLIENT_JSON` içine Google Cloud Console'dan alınan OAuth **Desktop app** istemci JSON'unu eklemelidir. EXE bu yapılandırmayla derlenir; kullanıcı uygulamada **Google hesabını bağla** akışını tamamlar. Kullanıcının ayrıca rclone kurması gerekmez.
+- `sqlcmd`, `pg_dump` ve `psql` Windows paketine eklenir. SQL Server için hedef sistemde uyumlu Microsoft ODBC Driver gerekir.
+- S3 uyumlu hedefler için endpoint (isteğe bağlı), bucket, region ve erişim anahtarları uygulamada yapılandırılır.\n- Google Drive için uygulamanın geliştiricisi GitHub Actions secret `GOOGLE_OAUTH_CLIENT_JSON` içine Google Cloud Console'dan alınan OAuth **Desktop app** istemci JSON'unu eklemelidir. EXE bu yapılandırmayla derlenir; kullanıcı uygulamada **Google hesabını bağla** akışını tamamlar. Kullanıcının ayrıca rclone kurması gerekmez.
 - Hedef bilgisayarda Python gerekmez; EXE derleme işlemi GitHub Actions Windows makinesinde yapılır.
 
 ## Önemli notlar
