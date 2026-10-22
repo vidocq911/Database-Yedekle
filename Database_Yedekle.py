@@ -285,7 +285,7 @@ class App(tk.Tk):
         ttk.Label(self.storagetab,text="Yedekler seçtiğin hedefe doğrudan gönderilir; aracı sunucu yoktur.",style="Muted.TLabel").pack(anchor="w",pady=(4,10))
         targetrow=ttk.Frame(self.storagetab);targetrow.pack(fill="x",pady=(0,10))
         ttk.Label(targetrow,text="Hedef").pack(side="left")
-        ttk.Combobox(targetrow,textvariable=self.target,values=["Yerel klasör","Google Drive","QNAP / SFTP"],state="readonly",width=20).pack(side="left",padx=8)
+        ttk.Combobox(targetrow,textvariable=self.target,values=["Yerel klasör","Google Drive","Dropbox","QNAP / SFTP"],state="readonly",width=20).pack(side="left",padx=8)
         ttk.Label(self.storagetab,text="Yerel yedek klasörü",style="Section.TLabel").pack(anchor="w")
         row=ttk.Frame(self.storagetab);row.pack(fill="x",pady=(4,10))
         ttk.Entry(row,textvariable=self.local).pack(side="left",fill="x",expand=True)
@@ -304,6 +304,8 @@ class App(tk.Tk):
         statusrow=ttk.Frame(self.storagetab);statusrow.pack(fill="x",pady=(1,5))
         ttk.Button(statusrow,text="Google hesabını bağla",command=self.connect_google).pack(side="left")
         ttk.Button(statusrow,text="Google bağlantısını kes / hesabı unut",command=self.disconnect_google).pack(side="left",padx=6)
+        ttk.Button(statusrow,text="Dropbox hesabını bağla",command=self.connect_dropbox).pack(side="left",padx=6)
+        ttk.Button(statusrow,text="Dropbox bağlantısını kes",command=self.disconnect_dropbox).pack(side="left",padx=6)
         ttk.Button(statusrow,text="QNAP bağlantısını test et",command=self.test_sftp).pack(side="left",padx=6)
         ttk.Label(self.storagetab,text="Google belirteci bu Windows kullanıcısının AppData alanında tutulur. Ortak bilgisayarda bağlantıyı kes. QNAP parolası ayarlarda kaydedilir; hassas cihazlarda kullanımdan sonra temizle.",wraplength=760,style="Muted.TLabel").pack(anchor="w",pady=(4,0))
 
@@ -419,6 +421,58 @@ class App(tk.Tk):
             self.status.set("Google bağlantısı kaldırıldı; yerel belirteç silindi.")
             messagebox.showinfo("Google bağlantısı","Bu bilgisayardaki yerel Google belirteci silindi. Tam erişim iptali için Google Hesabı > Güvenlik > Üçüncü taraf bağlantıları bölümünden de uygulama erişimini kaldır.")
         except Exception as e: messagebox.showerror("Bağlantı kesilemedi",str(e))
+
+    def _dropbox_app_key(self):
+        candidates=[]
+        if getattr(sys,"frozen",False):
+            candidates += [Path(getattr(sys,"_MEIPASS",Path(sys.executable).parent))/"dropbox_app_key.txt",Path(sys.executable).parent/"dropbox_app_key.txt"]
+        else:
+            candidates += [Path(__file__).parent/"dropbox_app_key.txt"]
+        for path in candidates:
+            try:
+                value=path.read_text(encoding="utf-8-sig").strip()
+                if value:return value
+            except OSError:pass
+        raise RuntimeError("Dropbox bağlantısı bu EXE için henüz yapılandırılmamış. Geliştirici Dropbox App Key değerini DROPBOX_APP_KEY secret alanına ekleyip yeniden derlemeli.")
+
+    def _dropbox_client(self,interactive=False):
+        import dropbox
+        app_key=self._dropbox_app_key()
+        token_path=self._config_dir()/"dropbox_token.json"
+        token_data={}
+        try:token_data=json.loads(token_path.read_text(encoding="utf-8"))
+        except Exception:pass
+        refresh=token_data.get("refresh_token")
+        if not refresh and interactive:
+            flow=dropbox.DropboxOAuth2FlowNoRedirect(app_key,token_access_type="offline")
+            auth_url=flow.start()
+            webbrowser.open(auth_url)
+            code=simpledialog.askstring("Dropbox bağlantısı","Tarayıcıda Dropbox'a giriş yapıp izin ver. Gösterilen yetkilendirme kodunu buraya yapıştır:",parent=self)
+            if not code:raise RuntimeError("Dropbox bağlantısı iptal edildi.")
+            result=flow.finish(code.strip())
+            refresh=result.refresh_token
+            token_path.write_text(json.dumps({"refresh_token":refresh},indent=2),encoding="utf-8")
+        if not refresh:
+            raise RuntimeError("Dropbox hesabı bağlı değil. Önce Yedekleme Hedefi sekmesinden Dropbox hesabını bağla.")
+        client=dropbox.Dropbox(oauth2_refresh_token=refresh,app_key=app_key)
+        client.users_get_current_account()
+        return client
+
+    def connect_dropbox(self):
+        try:
+            self._dropbox_client(interactive=True)
+            self.status.set("Dropbox bağlantısı doğrulandı.")
+            messagebox.showinfo("Dropbox","Dropbox hesabı başarıyla bağlandı.",parent=self)
+        except Exception as e:
+            messagebox.showerror("Dropbox bağlantısı",str(e),parent=self)
+
+    def disconnect_dropbox(self):
+        try:
+            token=self._config_dir()/"dropbox_token.json"
+            token.unlink(missing_ok=True)
+            self.status.set("Dropbox bağlantısı kesildi.")
+            messagebox.showinfo("Dropbox","Bu bilgisayardaki Dropbox yenileme belirteci silindi.",parent=self)
+        except Exception as e:messagebox.showerror("Dropbox",str(e),parent=self)
 
     def _sftp_connect(self):
         import paramiko
@@ -571,6 +625,12 @@ class App(tk.Tk):
                 service=self._config_credentials()
                 root=self._drive_folder(service,self.drive_folder.get().strip() or "DatabaseBackups")
                 remote_day=self._drive_folder(service,datetime.now().strftime("%Y-%m-%d"),root)
+            elif target=="Dropbox":
+                service=self._dropbox_client(interactive=False)
+                remote_day="/"+(self.drive_folder.get().strip() or "DatabaseBackups").strip("/")+"/"+datetime.now().strftime("%Y-%m-%d")
+                try:service.files_create_folder_v2(remote_day)
+                except Exception as e:
+                    if "conflict" not in str(e).lower(): raise
             elif target=="QNAP / SFTP":
                 sftp,transport=self._sftp_connect()
                 remote_root=self.qnap_path.get().strip() or "."
@@ -604,6 +664,11 @@ class App(tk.Tk):
                     from googleapiclient.http import MediaFileUpload
                     service.files().create(body={"name":out.name,"parents":[remote_day]},media_body=MediaFileUpload(str(out),resumable=True),fields="id").execute()
                     self.after(0,lambda n=out.name:self.status.set("Google Drive'a yüklendi: "+n))
+                elif target=="Dropbox":
+                    import dropbox
+                    with out.open("rb") as source:
+                        service.files_upload(source.read(),remote_day+"/"+out.name,mode=dropbox.files.WriteMode.overwrite)
+                    self.after(0,lambda n=out.name:self.status.set("Dropbox'a yüklendi: "+n))
                 elif target=="QNAP / SFTP":
                     sftp.put(str(out),remote_day+"/"+out.name)
                     self.after(0,lambda n=out.name:self.status.set("QNAP'a yüklendi: "+n))
