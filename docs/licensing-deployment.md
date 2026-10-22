@@ -13,6 +13,7 @@ The schema foundation and admin allowlist migrations are:
 
 - `supabase/migrations/202610220001_licensing_customer_management.sql`
 - `supabase/migrations/202610220002_admin_users.sql`
+- `supabase/migrations/202610220003_atomic_demo_review.sql`
 
 Only apply migrations that have not already been applied. The schema uses RLS with no client-facing policies on the private customer, demo, license, device, sales, payment, and event tables. Do not add broad `anon` or `authenticated` policies to make the application work.
 
@@ -37,7 +38,7 @@ Deploy these functions from the current branch when ready:
 
 Keep JWT verification enabled for `admin-review-demo`; the function additionally validates the user's access token and checks `public.admin_users` for an active `owner` or `admin` role. The public `demo-request` endpoint intentionally accepts unauthenticated requests. CORS is not authentication; before production, add edge rate limiting and CAPTCHA/bot protection.
 
-The admin-review handler updates the demo request, updates the customer, and writes an event record. These are separate database requests, not a single transaction. It now returns an explicit partial-update error if the customer or event step fails; after such an error, inspect the affected rows before retrying. A future hardening step should move the state change into a single database transaction/RPC.
+The admin-review handler calls `public.review_demo_request_atomic`, which updates the demo request, customer status, and audit event in a single database transaction. Apply migration `202610220003_atomic_demo_review.sql` before deploying the updated admin-review function; without it, the function returns an explicit error.
 
 ## Bootstrap the first admin
 
