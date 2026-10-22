@@ -26,9 +26,9 @@ def db_icon(kind,size=40):
             p.end()
     pix=QPixmap(size,size); pix.fill(Qt.GlobalColor.transparent); p=QPainter(pix); p.setRenderHint(QPainter.RenderHint.Antialiasing)
     if kind=="app":
-        p.setPen(QPen(QColor("#5575A8"),1.4));p.setBrush(QColor("#233B5B"));p.drawRoundedRect(size*.10,size*.13,size*.80,size*.72,size*.13,size*.13)
-        p.setPen(QPen(QColor("#7B9CCB"),1.2));p.setBrush(QColor("#3E5D89"));p.drawEllipse(size*.24,size*.20,size*.52,size*.18);p.drawArc(size*.24,size*.23,size*.52,size*.22,180*16,180*16);p.drawArc(size*.24,size*.37,size*.52,size*.22,180*16,180*16);p.drawArc(size*.24,size*.51,size*.52,size*.22,180*16,180*16)
-        p.setPen(Qt.PenStyle.NoPen);p.setBrush(QColor("#6F8ED0"));p.drawEllipse(size*.67,size*.65,size*.20,size*.20)
+        p.setPen(QPen(QColor("#5575A8"),1.4));p.setBrush(QColor("#233B5B"));p.drawRoundedRect(int(size*.10),int(size*.13),int(size*.80),int(size*.72),int(size*.13),int(size*.13))
+        p.setPen(QPen(QColor("#7B9CCB"),1.2));p.setBrush(QColor("#3E5D89"));p.drawEllipse(int(size*.24),int(size*.20),int(size*.52),int(size*.18));p.drawArc(int(size*.24),int(size*.23),int(size*.52),int(size*.22),180*16,180*16);p.drawArc(int(size*.24),int(size*.37),int(size*.52),int(size*.22),180*16,180*16);p.drawArc(int(size*.24),int(size*.51),int(size*.52),int(size*.22),180*16,180*16)
+        p.setPen(Qt.PenStyle.NoPen);p.setBrush(QColor("#6F8ED0"));p.drawEllipse(int(size*.67),int(size*.65),int(size*.20),int(size*.20))
     elif kind=="SQL Server":
         p.setPen(QPen(QColor("#FFB4AE"),1.4));p.setBrush(QColor("#E7483D"));p.drawRoundedRect(5,8,size-10,size-16,5,5);p.drawEllipse(5,4,size-10,11);p.setBrush(Qt.BrushStyle.NoBrush);p.drawArc(5,size-15,size-10,11,0,180*16);p.drawArc(5,13,size-10,11,0,180*16)
     elif kind=="PostgreSQL":
