@@ -36,7 +36,9 @@ Deno.serve(async (req: Request) => {
   const url = Deno.env.get("SUPABASE_URL");
   const publishableKey = readKeyMap("SUPABASE_PUBLISHABLE_KEYS")?.default
     ?? Deno.env.get("SUPABASE_ANON_KEY");
-  const serviceKey = readKeyMap("SUPABASE_SECRET_KEYS")?.default\n    ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const serviceKey = readKeyMap("SUPABASE_SECRET_KEYS")?.default
+    ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
   if (!url || !publishableKey || !serviceKey) {
     return json({ error: "Sunucu yapılandırması eksik." }, 500);
   }
@@ -80,64 +82,22 @@ Deno.serve(async (req: Request) => {
     return json({ error: "request_id ve approve/reject kararı gerekli." }, 400);
   }
 
-  const { data: demo, error: findError } = await adminClient
-    .from("demo_requests")
-    .select("id, customer_id, status")
-    .eq("id", requestId)
-    .maybeSingle();
-
-  if (findError) return json({ error: "Demo talebi okunamadı." }, 500);
-  if (!demo) return json({ error: "Demo talebi bulunamadı." }, 404);
-  if (demo.status !== "pending") return json({ error: "Bu talep daha önce işleme alınmış." }, 409);
-
-  const now = new Date().toISOString();
-  const approved = decision === "approve";
-  const patch = {
-    status: approved ? "approved" : "rejected",
-    reviewed_at: now,
-    reviewed_by: userData.user.id,
-    review_note: note,
-    trial_starts_at: approved ? now : null,
-    trial_ends_at: approved ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : null,
-  };
-
-  const { data: updated, error: updateError } = await adminClient
-    .from("demo_requests")
-    .update(patch)
-    .eq("id", requestId)
-    .eq("status", "pending")
-    .select("id, status, reviewed_at, trial_starts_at, trial_ends_at")
-    .maybeSingle();
-
-  if (updateError) return json({ error: "Demo talebi güncellenemedi." }, 500);
-  if (!updated) return json({ error: "Talep eşzamanlı olarak başka bir yönetici tarafından işlendi." }, 409);
-
-  const { error: customerError } = await adminClient
-    .from("customers")
-    .update({ status: approved ? "active" : "rejected", updated_at: now })
-    .eq("id", demo.customer_id);
-
-  if (customerError) {
-    return json({
-      error: "Talep kararı kaydedildi ancak müşteri durumu güncellenemedi.",
-      request_id: requestId,
-      partial_update: true,
-    }, 500);
-  }
-
-  const { error: eventError } = await adminClient.from("license_events").insert({
-    customer_id: demo.customer_id,
-    event_type: approved ? "demo_approved" : "demo_rejected",
-    details: { request_id: requestId, reviewed_by: userData.user.id, note },
+  // The RPC performs the request/customer/event updates in one database transaction.
+  const { data: reviewed, error: reviewError } = await adminClient.rpc("review_demo_request_atomic", {
+    p_request_id: requestId,
+    p_decision: decision,
+    p_reviewed_by: userData.user.id,
+    p_note: note,
   });
 
-  if (eventError) {
+  if (reviewError) {
+    if (reviewError.code === "P0002") return json({ error: "Demo talebi bulunamadı." }, 404);
+    if (reviewError.code === "40001") return json({ error: "Bu talep daha önce işleme alınmış." }, 409);
+    if (reviewError.code === "22023") return json({ error: "Geçersiz karar." }, 400);
     return json({
-      error: "Talep ve müşteri güncellendi ancak olay kaydı yazılamadı.",
-      request_id: requestId,
-      partial_update: true,
+      error: "Demo talebi güvenli biçimde işlenemedi. Atomic review migration uygulanmış mı kontrol edin.",
     }, 500);
   }
 
-  return json({ ok: true, demo_request: updated });
+  return json({ ok: true, demo_request: reviewed });
 });
