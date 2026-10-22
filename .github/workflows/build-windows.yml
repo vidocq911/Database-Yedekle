@@ -72,7 +72,7 @@ jobs:
         run: python -m pip install --upgrade pip pyinstaller pillow pyautogui pygetwindow PySide6 google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko cryptography dropbox boto3
 
       - name: Check Python syntax
-        run: python -m py_compile database_yedekle_qt.py Database_Yedekle.py licensing_client.py license_manager.py scripts/generate_license_signing_key.py
+        run: python -m py_compile database_yedekle_qt.py licensing_client.py license_manager.py scripts/generate_license_signing_key.py
 
       - name: Test license verification
         run: python -m unittest discover -s tests -v
@@ -95,7 +95,7 @@ jobs:
       - name: Build executable
         shell: pwsh
         run: |
-          $common = @("--noconfirm","--clean","--onefile","--windowed","--icon","Database-Yedekle.ico","--collect-all","googleapiclient","--collect-all","google_auth_oauthlib","--collect-all","google.auth","--name","Database Yedekle","Database_Yedekle.py")
+          $common = @("--noconfirm","--clean","--onefile","--windowed","--icon","Database-Yedekle.ico","--collect-all","googleapiclient","--collect-all","google_auth_oauthlib","--collect-all","google.auth","--name","Database Yedekle","database_yedekle_qt.py")
           $data = @()
           if (Test-Path vendor-tools) { Get-ChildItem vendor-tools -File | ForEach-Object { $data += @("--add-binary", "$($_.FullName);.") } }
           if (Test-Path client_secrets.json) { $data += @("--add-data", "client_secrets.json;.") }
@@ -132,7 +132,7 @@ jobs:
             ""
             "1. Extract this ZIP to a folder."
             "2. Run Database Yedekle.exe."
-            "3. The application opens in a fixed 940 x 620 window."
+            "3. The application opens in the redesigned PySide6/Qt interface."
             "4. Google Drive/Dropbox targets are shown in the Qt UI; their OAuth upload adapters still need to be ported before use in this UI."
             "5. SQL command-line tools are bundled when installation succeeds; SQL Server still requires a compatible Microsoft ODBC Driver."
             "6. S3-compatible targets support AWS S3, Cloudflare R2, and MinIO."
