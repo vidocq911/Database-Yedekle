@@ -150,12 +150,27 @@ class App(QMainWindow):
         w=QWidget();l=QVBoxLayout(w);l.setContentsMargins(8,12,8,8);h=QLabel(title);h.setObjectName("section");d=QLabel(desc);d.setObjectName("muted");d.setWordWrap(True);l.addWidget(h);l.addWidget(d);b=QPushButton(button_text);b.setObjectName("primary");b.clicked.connect(callback);l.addWidget(b,0,Qt.AlignmentFlag.AlignLeft);self.oauth_labels=getattr(self,"oauth_labels",{});self.oauth_labels[title]=QLabel("Bağlı değil");self.oauth_labels[title].setObjectName("muted");l.addWidget(self.oauth_labels[title]);l.addStretch();return w
     def connect_google(self):
         p=asset("client_secrets.json")
-        if not p.exists():QMessageBox.warning(self,"Google Drive yapılandırılmamış","Google OAuth Desktop JSON dosyası derlemeye eklenmemiş. GitHub Actions > Settings > Secrets and variables > Actions bölümüne GOOGLE_OAUTH_CLIENT_JSON ekleyip yeni EXE derle.");return
-        QMessageBox.information(self,"Google Drive","Google OAuth istemci bilgisi bulundu. Bu sürümde Google Drive OAuth akışı ve yükleyici henüz bağlanmadı.");
+        if not p.exists():QMessageBox.warning(self,"Google Drive yapılandırılmamış","Google OAuth Desktop JSON dosyası derlemeye eklenmemiş. GitHub deposunda Settings → Secrets and variables → Actions bölümüne GOOGLE_OAUTH_CLIENT_JSON ekleyip yeni EXE derle.");return
+        try:
+            from google_auth_oauthlib.flow import InstalledAppFlow
+            flow=InstalledAppFlow.from_client_secrets_file(str(p),["https://www.googleapis.com/auth/drive.file"])
+            QMessageBox.information(self,"Google hesabı","Tarayıcıda Google giriş ekranı açılacak. İzin verip bu pencereye dön.")
+            creds=flow.run_local_server(port=0,open_browser=True,authorization_prompt_message="Google Drive bağlantısı için tarayıcı açılıyor…",success_message="Google Drive bağlantısı tamamlandı. Bu sekmeyi kapatabilirsiniz.")
+            self.cfg["google_credentials"]=creds.to_json();self.save_cfg();self.oauth_labels["Google Drive"].setText("Google Drive hesabı bağlı");QMessageBox.information(self,"Bağlantı başarılı","Google Drive hesabı bağlandı.")
+        except Exception as e:QMessageBox.critical(self,"Google bağlantısı başarısız",str(e))
     def connect_dropbox(self):
         p=asset("dropbox_app_key.txt")
         if not p.exists():QMessageBox.warning(self,"Dropbox yapılandırılmamış","GitHub Actions secret DROPBOX_APP_KEY eksik. Secret eklendikten sonra yeni EXE derle.");return
-        QMessageBox.information(self,"Dropbox","Dropbox uygulama anahtarı bulundu. Bu sürümde OAuth akışı ve Dropbox yükleyicisi henüz bağlanmadı.");
+        try:
+            import dropbox
+            from dropbox.oauth import DropboxOAuth2FlowNoRedirect
+            app_key=p.read_text(encoding="utf-8").strip();flow=DropboxOAuth2FlowNoRedirect(app_key,token_access_type="offline")
+            GenURL=flow.start();webbrowser.open(GenURL)
+            from PySide6.QtWidgets import QInputDialog
+            code,ok=QInputDialog.getText(self,"Dropbox girişi","Tarayıcıda izin verdikten sonra Dropbox'ın verdiği kodu buraya yapıştır:")
+            if not ok or not code.strip():return
+            result=flow.finish(code.strip());self.cfg["dropbox_refresh_token"]=getattr(result,"refresh_token","") or getattr(result,"access_token","");self.cfg["dropbox_app_key"]=app_key;self.save_cfg();self.oauth_labels["Dropbox"].setText("Dropbox hesabı bağlı");QMessageBox.information(self,"Bağlantı başarılı","Dropbox hesabı bağlandı.")
+        except Exception as e:QMessageBox.critical(self,"Dropbox bağlantısı başarısız",str(e));
     def notice(self,title,desc):
         w=QWidget();l=QVBoxLayout(w);h=QLabel(title);h.setObjectName("section");d=QLabel(desc);d.setObjectName("muted");d.setWordWrap(True);l.addWidget(h);l.addWidget(d);l.addStretch();return w
     def style(self):
@@ -245,7 +260,7 @@ class App(QMainWindow):
         if not chosen:QMessageBox.warning(self,"Seçim gerekli","Önce yedeklenecek veritabanı ekle.");return
         self.save_cfg();self.go.setEnabled(False);self.status.setText("Yedekleme sürüyor…")
         # Capture UI values on the main thread before worker starts.
-        opts={"target":self.target.currentText(),"local":self.local.text(),"endpoint":self.endpoint.text(),"bucket":self.bucket.text(),"region":self.region.text(),"access":self.access.text(),"secret":self.secret.text(),"folder":self.remote_folder.text(),"shost":self.shost.text(),"sport":self.sport.text(),"suser":self.suser.text(),"spass":self.spass.text(),"spath":self.spath.text()}
+        opts={"target":self.target.currentText(),"local":self.local.text(),"endpoint":self.endpoint.text(),"bucket":self.bucket.text(),"region":self.region.text(),"access":self.access.text(),"secret":self.secret.text(),"folder":self.remote_folder.text(),"shost":self.shost.text(),"sport":self.sport.text(),"suser":self.suser.text(),"spass":self.spass.text(),"spath":self.spath.text(),"google_credentials":self.cfg.get("google_credentials",""),"dropbox_refresh_token":self.cfg.get("dropbox_refresh_token",""),"dropbox_app_key":self.cfg.get("dropbox_app_key","")}
         threading.Thread(target=self.backup_worker,args=(chosen,opts),daemon=True).start()
     def backup_worker(self,items,o):
         try:
@@ -277,7 +292,22 @@ class App(QMainWindow):
                         except IOError:pass
                         s.put(str(out),remote+"/"+out.name)
                     finally:s.close();t.close()
-                elif o["target"] in ("Google Drive","Dropbox"):raise RuntimeError(f"{o['target']} OAuth integration needs to be ported into the Qt UI; choose local, S3 or SFTP for this build.")
+                elif o["target"]=="Google Drive":
+                    if not o.get("google_credentials"):raise RuntimeError("Önce Yedekleme hedefi bölümünden Google hesabını bağla.")
+                    from google.oauth2.credentials import Credentials
+                    from googleapiclient.discovery import build
+                    from googleapiclient.http import MediaFileUpload
+                    creds=Credentials.from_authorized_user_info(json.loads(o["google_credentials"]),["https://www.googleapis.com/auth/drive.file"]);service=build("drive","v3",credentials=creds,cache_discovery=False)
+                    meta={"name":out.name}
+                    if o["folder"]:
+                        q="name='"+o["folder"].replace("'","\\'")+"' and mimeType='application/vnd.google-apps.folder' and trashed=false";folders=service.files().list(q=q,fields="files(id,name)",pageSize=10).execute().get("files",[])
+                        if folders:meta["parents"]=[folders[0]["id"]]
+                    service.files().create(body=meta,media_body=MediaFileUpload(str(out),resumable=True),fields="id").execute()
+                elif o["target"]=="Dropbox":
+                    if not o.get("dropbox_refresh_token"):raise RuntimeError("Önce Yedekleme hedefi bölümünden Dropbox hesabını bağla.")
+                    import dropbox
+                    c=dropbox.Dropbox(oauth2_refresh_token=o["dropbox_refresh_token"],app_key=o["dropbox_app_key"]);remote="/"+(o["folder"] or "DatabaseBackups").strip("/")+"/"+out.name
+                    with out.open("rb") as fh:c.files_upload(fh.read(),remote,mode=dropbox.files.WriteMode.overwrite)
             self.bus.done.emit(f"{len(items)} veritabanı yedeklendi.",True)
         except Exception as e:self.bus.done.emit(str(e),False)
     def backup_result(self,msg,ok):
