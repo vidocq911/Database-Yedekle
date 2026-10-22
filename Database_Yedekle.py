@@ -358,18 +358,18 @@ class App(tk.Tk):
         if not exe:
             if typ == "SQL Server":
                 detail = (
-                    "SQL Server istemci aracı (sqlcmd) bu bilgisayarda bulunamadı.\\n\\n"
-                    "Bu araç SQL Server'a bağlanıp veritabanlarını taramak ve .bak yedeğini başlatmak için gerekir.\\n"
-                    "SQL Server Management Studio tek başına sqlcmd aracının kurulu olduğunu garanti etmez.\\n\\n"
-                    "Kurulum sayfasını açayım mı?"
+                    "SQL Server komut satırı aracı (sqlcmd) bu uygulama paketinde bulunamadı.\n\n"
+                    "Otomatik tarama ve SQL Server yedekleme için bu araç gerekir. Bu sürümde araç EXE içine henüz gömülü değil.\n\n"
+                    "Şimdilik Manuel Ekle ile sunucu/veritabanı kaydı oluşturabilirsin; yedek almak için sqlcmd kurulumu yine gerekir.\n\n"
+                    "Microsoft'un resmi kurulum sayfasını açayım mı?"
                 )
                 url = "https://learn.microsoft.com/sql/tools/sqlcmd/sqlcmd-utility"
             else:
                 detail = (
-                    "PostgreSQL istemci araçları (psql / pg_dump) bu bilgisayarda bulunamadı.\\n\\n"
-                    "psql otomatik tarama, pg_dump ise yedek alma için kullanılır.\\n"
-                    "PostgreSQL kurulumunda Command Line Tools bileşenini seç veya PostgreSQL'in bin klasörünü PATH'e ekle.\\n\\n"
-                    "İndirme sayfasını açayım mı?"
+                    "PostgreSQL komut satırı araçları (psql / pg_dump) bu uygulama paketinde bulunamadı.\n\n"
+                    "psql otomatik tarama, pg_dump yedek alma için gerekir. Bu sürümde araçlar EXE içine henüz gömülü değil.\n\n"
+                    "Şimdilik Manuel Ekle ile veritabanı kaydı oluşturabilirsin; yedek almak için istemci araçları yine gerekir.\n\n"
+                    "PostgreSQL'in resmi indirme sayfasını açayım mı?"
                 )
                 url = "https://www.postgresql.org/download/windows/"
             if messagebox.askyesno("Veritabanı aracı gerekli", detail, parent=self):
