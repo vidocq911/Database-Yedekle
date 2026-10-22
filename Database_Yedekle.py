@@ -1,4 +1,4 @@
-import os, sys, shutil, subprocess, threading, tkinter as tk
+import os, sys, shutil, subprocess, threading, tkinter as tk, json
 from tkinter import ttk, messagebox, filedialog, simpledialog
 from pathlib import Path
 from datetime import datetime
@@ -190,44 +190,78 @@ class App(tk.Tk):
         if d:self.local.set(d)
 
     def start(self):
-        chosen=[x.copy() for x in self.items if x["use"]]
+        chosen=[x.copy() for x in self.items if x.get("use")]
         if not chosen:
             messagebox.showinfo("Yedekleme listesi boş","Önce yedeklenecek veritabanlarını seç veya ekle.");return
-        rclone=bundled_tool("rclone.exe") or bundled_tool("rclone")
-        if not rclone:
-            messagebox.showerror("rclone bulunamadı","Google Drive aktarımı için rclone kurulu olmalı ve Google Drive remote'u yapılandırılmalı. Yerel yedekleme bu araçtan bağımsız olarak da yapılabilir; önce yerel yedekleme seçeneğini eklememiz gerekiyor.")
-            return
-        threading.Thread(target=self.backup,args=(chosen,rclone),daemon=True).start()
+        self.save_settings()
+        threading.Thread(target=self.backup,args=(chosen,),daemon=True).start()
 
-    def backup(self,items,rclone):
+    def config_dir(self):
+        p=Path(os.getenv("APPDATA",str(Path.home())))/"DatabaseYedekle"
+        p.mkdir(parents=True,exist_ok=True)
+        return p
+
+    def drive_service(self):
+        from googleapiclient.discovery import build
+        from google_auth_oauthlib.flow import InstalledAppFlow
+        from google.oauth2.credentials import Credentials
+        scopes=["https://www.googleapis.com/auth/drive.file"]
+        base=self.config_dir()
+        token=base/"google_token.json"
+        secrets=(Path(sys.executable).parent if getattr(sys,"frozen",False) else Path(__file__).parent)/"client_secrets.json"
+        creds=None
+        if token.exists():
+            try:creds=Credentials.from_authorized_user_file(str(token),scopes)
+            except Exception:pass
+        if creds and creds.expired and creds.refresh_token:
+            from google.auth.transport.requests import Request
+            creds.refresh(Request())
+        if not creds or not creds.valid:
+            if not secrets.exists():raise RuntimeError("Google OAuth istemci dosyası eksik. client_secrets.json dosyasını EXE'nin yanına koymalıyız.")
+            flow=InstalledAppFlow.from_client_secrets_file(str(secrets),scopes)
+            creds=flow.run_local_server(port=0)
+            token.write_text(creds.to_json(),encoding="utf-8")
+        return build("drive","v3",credentials=creds,cache_discovery=False)
+
+    def ensure_folder(self,service,name,parent=None):
+        q="mimeType='application/vnd.google-apps.folder' and name='"+name.replace("'","\\'")+"' and trashed=false"
+        if parent:q+=" and '"+parent+"' in parents"
+        r=service.files().list(q=q,spaces="drive",fields="files(id,name)",pageSize=100).execute()
+        if r.get("files"):return r["files"][0]["id"]
+        body={"name":name,"mimeType":"application/vnd.google-apps.folder"}
+        if parent:body["parents"]=[parent]
+        return service.files().create(body=body,fields="id").execute()["id"]
+
+    def backup(self,items):
         folder=Path(self.local.get())/datetime.now().strftime("%Y-%m-%d")
         folder.mkdir(parents=True,exist_ok=True)
+        service=self.drive_service()
+        root=self.ensure_folder(service,self.remote.get().strip() or "DatabaseBackups")
+        datefolder=self.ensure_folder(service,datetime.now().strftime("%Y-%m-%d"),root)
+        from googleapiclient.http import MediaFileUpload
         for x in items:
             stamp=datetime.now().strftime("%Y%m%d_%H%M%S")
-            safe="".join(c if c.isalnum() or c in "-_." else "_" for c in x["alias"])
+            safe="".join(ch if ch.isalnum() or ch in "-_." else "_" for ch in x["alias"])
             try:
                 if x["type"]=="SQL Server":
                     out=folder/f"{safe}_{stamp}.bak"
                     query=f"BACKUP DATABASE [{x['db'].replace(']', ']]')}] TO DISK = N'{str(out).replace(chr(39), chr(39)*2)}' WITH INIT, COMPRESSION"
                     cmd=[bundled_tool("sqlcmd") or "sqlcmd","-S",x["server"],"-Q",query,"-b"]
-                    if x["user"]:
+                    if x.get("user"):
                         pw=simpledialog.askstring("DB şifresi",f"{x['db']} kullanıcı şifresi:",show="*",parent=self)
                         if pw is None:continue
                         cmd=["sqlcmd","-S",x["server"],"-U",x["user"],"-P",pw,"-Q",query,"-b"]
                 else:
                     out=folder/f"{safe}_{stamp}.dump"
                     cmd=[bundled_tool("pg_dump") or "pg_dump","-h",x["server"],"-Fc","-f",str(out),x["db"]]
-                    if x["user"]:cmd[1:1]=["-U",x["user"]]
-                self.after(0,lambda db=x["db"]:self.say(f"Yedekleniyor: {db}"))
+                    if x.get("user"):cmd[1:1]=["-U",x["user"]]
+                self.after(0,lambda db=x["db"]:self.say("Yedekleniyor: "+db))
                 p=subprocess.run(cmd,capture_output=True,text=True,timeout=3600,creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
                 if p.returncode:raise RuntimeError((p.stderr or p.stdout or "Komut başarısız").strip())
-                remote=self.remote.get().strip().rstrip("/")
-                if not remote:raise RuntimeError("Google Drive hedefi boş.")
-                dest=f"{remote}/{datetime.now().strftime('%Y-%m-%d')}"
-                p=subprocess.run([rclone,"copyto",str(out),f"{dest}/{out.name}"],capture_output=True,text=True,timeout=3600,creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0))
-                if p.returncode:raise RuntimeError((p.stderr or p.stdout or "Drive yükleme başarısız").strip())
-                self.after(0,lambda n=out.name,d=dest:self.say(f"Tamamlandı: {n} → {d}"))
-            except Exception as e:self.after(0,lambda db=x["db"],err=str(e):self.say(f"HATA ({db}): {err}"))
+                media=MediaFileUpload(str(out),resumable=True)
+                service.files().create(body={"name":out.name,"parents":[datefolder]},media_body=media,fields="id").execute()
+                self.after(0,lambda n=out.name:self.say("Tamamlandı: "+n+" Google Drive'a yüklendi."))
+            except Exception as exc:self.after(0,lambda db=x["db"],err=str(exc):self.say("HATA ("+db+"): "+err))
         self.after(0,lambda:self.say("İşlem tamamlandı."))
 
 if __name__=="__main__":
