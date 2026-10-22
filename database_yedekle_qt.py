@@ -288,15 +288,17 @@ class App(QMainWindow):
     def license(self):
         try:
             from license_manager import activate,check_cached_license
-            from PySide6.QtWidgets import QInputDialog
-            try:
-                p=check_cached_license()
-                if QMessageBox.question(self,"Lisans",f"Aktif lisans: {p.get('expires_at') or 'Süresiz'}\nYeniden doğrulansın mı?")!=QMessageBox.StandardButton.Yes:return
-            except Exception as e:
-                if QMessageBox.question(self,"Lisans",str(e)+"\n\nLisans anahtarı girmek ister misin?")!=QMessageBox.StandardButton.Yes:return
-            key,ok=QInputDialog.getText(self,"Lisans","Lisans anahtarı:")
-            if ok and key:QMessageBox.information(self,"Lisans",str(activate(key).get("expires_at") or "Süresiz"))
-        except Exception as e:QMessageBox.critical(self,"Lisans",str(e))
+            active=None;problem=None
+            try:active=check_cached_license()
+            except Exception as e:problem=str(e)
+            d=LicenseDialog(self,active,problem)
+            if d.exec()!=QDialog.DialogCode.Accepted:return
+            key=d.key.text().strip()
+            if not key:return
+            result=activate(key)
+            QMessageBox.information(self,"Lisans etkinleştirildi","Lisans doğrulandı.\nBitiş: "+str(result.get("expires_at") or "Süresiz"))
+        except Exception as e:
+            QMessageBox.critical(self,"Lisans doğrulanamadı",str(e))
     def closeEvent(self,event):
         try:self.save_cfg()
         except Exception:pass
