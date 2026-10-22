@@ -122,7 +122,7 @@ class App(tk.Tk):
         ttk.Label(headtext,text="Güvenli yedekleme merkezi",style="Title.TLabel").pack(anchor="w")
         ttk.Label(headtext,text="SQL SERVER   •   POSTGRESQL   •   GOOGLE DRIVE   •   QNAP / SFTP",style="Muted.TLabel").pack(anchor="w",pady=(3,0))
         ttk.Button(head,text="Demo / Müşteri Kaydı",command=self.open_demo_registration).pack(side="right",padx=(8,0),pady=(8,0))
-        ttk.Button(head,text="Destek",command=lambda:webbrowser.open("https://github.com/vidocq911/Database-Yedekle/issues")).pack(side="right",pady=(8,0))
+        ttk.Button(head,text="Destek",command=lambda:webbrowser.open("mailto:oguzhanyilmaz8@gmail.com?subject=Database%20Yedekle%20Destek")).pack(side="right",pady=(8,0))
         self.tabs=ttk.Notebook(shell);self.tabs.pack(fill="both",expand=True)
         self.dbtab=ttk.Frame(self.tabs,padding=7);self.schedtab=ttk.Frame(self.tabs,padding=8);self.storagetab=ttk.Frame(self.tabs,padding=8)
         self.tabs.add(self.dbtab,text="  Veritabanları  ")
@@ -156,11 +156,21 @@ class App(tk.Tk):
     def _draw_db_icon(self):
         if not hasattr(self, "db_icon"): return
         self.db_icon.delete("all")
-        color = "#D94B45" if self.dbtype.get() == "SQL Server" else "#336791"
-        self.db_icon.create_oval(4,4,30,13,fill=color,outline="")
-        self.db_icon.create_rectangle(4,8,30,25,fill=color,outline="")
-        self.db_icon.create_arc(4,18,30,31,start=0,extent=180,style="arc",outline=color, width=2)
-        self.db_icon.create_line(8,15,26,15,fill="#FFFFFF",width=2)
+        if self.dbtype.get() == "SQL Server":
+            c = "#E7483D"
+            self.db_icon.create_oval(3,3,31,12,fill=c,outline="#FFB4AE",width=1)
+            self.db_icon.create_rectangle(3,7,31,25,fill=c,outline="")
+            self.db_icon.create_arc(3,20,31,30,start=180,extent=180,style="arc",outline="#FFB4AE",width=2)
+            self.db_icon.create_arc(3,11,31,20,start=0,extent=180,style="arc",outline="#FFD4D0",width=1)
+            self.db_icon.create_line(4,16,30,16,fill="#FFD4D0",width=1)
+        else:
+            c = "#336791"
+            self.db_icon.create_oval(5,5,25,25,fill=c,outline="#A7D5F4",width=1)
+            self.db_icon.create_oval(2,8,10,17,fill=c,outline="#A7D5F4",width=1)
+            self.db_icon.create_oval(20,5,31,16,fill=c,outline="#A7D5F4",width=1)
+            self.db_icon.create_arc(14,14,27,32,start=270,extent=150,style="arc",outline="#A7D5F4",width=4)
+            self.db_icon.create_oval(20,9,23,12,fill="white",outline="")
+            self.db_icon.create_oval(21,10,22,11,fill="#17243A",outline="")
 
     def open_demo_registration(self):
         win=tk.Toplevel(self)
@@ -194,11 +204,15 @@ class App(tk.Tk):
                 messagebox.showinfo("Talep alındı",message,parent=win)
                 win.destroy()
             except urllib.error.HTTPError as exc:
-                try: message=json.loads(exc.read().decode("utf-8")).get("error","Talep gönderilemedi.")
-                except Exception: message="Talep gönderilemedi."
+                try:
+                    raw=exc.read().decode("utf-8",errors="replace")
+                    parsed=json.loads(raw)
+                    message=parsed.get("error") or parsed.get("message") or f"Sunucu HTTP {exc.code} yanıtı verdi."
+                except Exception:
+                    message=f"Sunucu HTTP {exc.code} yanıtı verdi. Demo talebi servisini kontrol edin."
                 result.set(message);button.configure(state="normal",text="Demo talebi gönder")
-            except Exception:
-                result.set("Sunucuya ulaşılamadı. Demo talebi servisi henüz yayımlanmamış olabilir.")
+            except Exception as exc:
+                result.set("Sunucuya ulaşılamadı: "+str(exc))
                 button.configure(state="normal",text="Demo talebi gönder")
         button=ttk.Button(outer,text="Demo talebi gönder",style="Primary.TButton",command=submit)
         button.pack(fill="x")
@@ -217,24 +231,36 @@ class App(tk.Tk):
         ttk.Button(bar,text="Otomatik Ara",command=self.scan).pack(side="left",padx=4)
         ttk.Button(bar,text="Manuel Ekle",command=self.add_manual).pack(side="left",padx=4)
         ttk.Button(bar,text="Kaldır",command=self.remove).pack(side="left",padx=4)
-        ttk.Label(self.dbtab,text="Yedekleme listesi",style="Section.TLabel").pack(anchor="w")
-        ttk.Label(self.dbtab,text="Satıra çift tıklayarak dahil etme durumunu değiştir. Seçilen kayıtlar yedeklenir.",style="Muted.TLabel").pack(anchor="w",pady=(2,8))
+        panes=ttk.Panedwindow(self.dbtab,orient="vertical")
+        panes.pack(fill="both",expand=True,pady=(0,2))
+        main=ttk.Frame(panes,padding=(0,0,0,5)); found=ttk.Frame(panes,padding=(0,5,0,0))
+        panes.add(main,weight=3); panes.add(found,weight=2)
+        ttk.Label(main,text="Yedekleme listesi",style="Section.TLabel").pack(anchor="w")
+        ttk.Label(main,text="Satıra çift tıklayarak dahil etme durumunu değiştir. Seçilen kayıtlar yedeklenir.",style="Muted.TLabel").pack(anchor="w",pady=(2,8))
         cols=("use","type","server","db","alias")
-        self.tree=ttk.Treeview(self.dbtab,columns=cols,show="headings",selectmode="extended")
-        for col,title,width in [("use","Dahil",55),("type","Tür",100),("server","Sunucu / Host",180),("db","Veritabanı",210),("alias","Yedek adı",190)]:
-            self.tree.heading(col,text=title);self.tree.column(col,width=width,anchor="w")
-        self.tree.pack(fill="both",expand=True)
+        wrap=ttk.Frame(main);wrap.pack(fill="both",expand=True)
+        self.tree=ttk.Treeview(wrap,columns=cols,show="headings",selectmode="extended")
+        vs=ttk.Scrollbar(wrap,orient="vertical",command=self.tree.yview);hs=ttk.Scrollbar(wrap,orient="horizontal",command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vs.set,xscrollcommand=hs.set)
+        for col,title,width in [("use","Dahil",60),("type","Tür",115),("server","Sunucu / Host",190),("db","Veritabanı",230),("alias","Yedek adı",190)]:
+            self.tree.heading(col,text=title);self.tree.column(col,width=width,anchor="w",stretch=col in ("server","db","alias"))
+        self.tree.grid(row=0,column=0,sticky="nsew");vs.grid(row=0,column=1,sticky="ns");hs.grid(row=1,column=0,sticky="ew")
+        wrap.rowconfigure(0,weight=1);wrap.columnconfigure(0,weight=1)
         self.tree.bind("<Double-1>",self.toggle)
-        actions=ttk.Frame(self.dbtab);actions.pack(fill="x",pady=(8,0))
+        actions=ttk.Frame(main);actions.pack(fill="x",pady=(7,0))
         ttk.Button(actions,text="Tümünü Dahil Et",command=lambda:self.set_all(True)).pack(side="left")
         ttk.Button(actions,text="Hiçbirini Seçme",command=lambda:self.set_all(False)).pack(side="left",padx=6)
         ttk.Button(actions,text="Yedek Adını Düzenle",command=self.rename).pack(side="right")
-        ttk.Label(self.dbtab,text="Arama sonuçları",style="Section.TLabel").pack(anchor="w",pady=(8,3))
-        self.foundtree=ttk.Treeview(self.dbtab,columns=("pick","type","server","db"),show="headings",height=3,selectmode="extended")
-        for col,title,width in [("pick","Ekle",50),("type","Tür",100),("server","Sunucu",180),("db","Bulunan veritabanı",250)]:
-            self.foundtree.heading(col,text=title);self.foundtree.column(col,width=width,anchor="w")
-        self.foundtree.pack(fill="x")
-        fbtn=ttk.Frame(self.dbtab);fbtn.pack(fill="x",pady=(6,0))
+        ttk.Label(found,text="Arama sonuçları",style="Section.TLabel").pack(anchor="w",pady=(0,4))
+        fwrap=ttk.Frame(found);fwrap.pack(fill="both",expand=True)
+        self.foundtree=ttk.Treeview(fwrap,columns=("pick","type","server","db"),show="headings",selectmode="extended")
+        fvs=ttk.Scrollbar(fwrap,orient="vertical",command=self.foundtree.yview);fhs=ttk.Scrollbar(fwrap,orient="horizontal",command=self.foundtree.xview)
+        self.foundtree.configure(yscrollcommand=fvs.set,xscrollcommand=fhs.set)
+        for col,title,width in [("pick","Ekle",55),("type","Tür",115),("server","Sunucu",190),("db","Bulunan veritabanı",250)]:
+            self.foundtree.heading(col,text=title);self.foundtree.column(col,width=width,anchor="w",stretch=col in ("server","db"))
+        self.foundtree.grid(row=0,column=0,sticky="nsew");fvs.grid(row=0,column=1,sticky="ns");fhs.grid(row=1,column=0,sticky="ew")
+        fwrap.rowconfigure(0,weight=1);fwrap.columnconfigure(0,weight=1)
+        fbtn=ttk.Frame(found);fbtn.pack(fill="x",pady=(6,0))
         ttk.Button(fbtn,text="Bulunanları İşaretle",command=lambda:self.mark_found(True)).pack(side="left")
         ttk.Button(fbtn,text="İşaretlileri Listeye Ekle",style="Primary.TButton",command=self.add_found).pack(side="right")
 
