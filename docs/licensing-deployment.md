@@ -35,8 +35,9 @@ Deploy these functions from the current branch when ready:
 
 - `supabase/functions/demo-request/index.ts`
 - `supabase/functions/admin-review-demo/index.ts`
+- `supabase/functions/create-license/index.ts`
 
-Keep JWT verification enabled for `admin-review-demo`; the function additionally validates the user's access token and checks `public.admin_users` for an active `owner` or `admin` role. The public `demo-request` endpoint intentionally accepts unauthenticated requests. CORS is not authentication; before production, add edge rate limiting and CAPTCHA/bot protection.
+Keep JWT verification enabled for `admin-review-demo`; the function additionally validates the user's access token and checks `public.admin_users` for an active `owner` or `admin` role. The public `demo-request` endpoint intentionally accepts unauthenticated requests. CORS is not authentication; before production, add edge rate limiting and CAPTCHA/bot protection. The `create-license` endpoint requires an authenticated active `owner` or `admin`, accepts an active customer ID, and returns a newly generated license key only once while storing only its SHA-256 hash.
 
 The admin-review handler calls `public.review_demo_request_atomic`, which updates the demo request, customer status, and audit event in a single database transaction. Apply migration `202610220003_atomic_demo_review.sql` before deploying the updated admin-review function; without it, the function returns an explicit error.
 
@@ -54,7 +55,7 @@ The admin-review handler calls `public.review_demo_request_atomic`, which update
 - Build and test the admin UI.
 - Move approval/rejection + customer status + audit event into one transaction/RPC.
 - Verify unauthorized, non-admin, approve, reject, duplicate-review, and partial-failure cases.
-- Implement license issuance, signed license responses, device activation/release, 168-hour online verification and 168-hour offline grace.
+- Implement signed license responses, device activation/release, 168-hour online verification and 168-hour offline grace. License issuance has a first server-side implementation, but it has not yet been deployed or end-to-end tested.
 - Integrate the Windows app without embedding a service-role/secret key or private signing key.
 - Run Supabase security advisors and confirm no anonymous/authenticated grants or policies expose private customer/license/payment records.
 - Do not enable production auto-deploy until migrations and functions are reviewed and tested.
