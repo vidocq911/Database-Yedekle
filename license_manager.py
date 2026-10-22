@@ -61,6 +61,9 @@ def activate(license_key: str) -> dict[str, Any]:
     key = license_key.strip()
     if not key:
         raise ValueError("Lisans anahtarını gir.")
+    # Fail locally before contacting the server: a missing public key must not
+    # consume a device activation slot that the client cannot verify.
+    public_jwk = _public_jwk()
     fingerprint = device_fingerprint()
     body = json.dumps({
         "license_key": key,
@@ -93,7 +96,7 @@ def activate(license_key: str) -> dict[str, Any]:
     except (urllib.error.URLError, TimeoutError) as exc:
         raise RuntimeError("Lisans sunucusuna bağlanılamadı. İnternet bağlantını kontrol et.") from exc
     verified = verify_activation_response(
-        envelope, _public_jwk(), sha256_hex(fingerprint)
+        envelope, public_jwk, sha256_hex(fingerprint)
     )
     cache = {
         "envelope": envelope,
