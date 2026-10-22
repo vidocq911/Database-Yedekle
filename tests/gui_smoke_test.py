@@ -3,9 +3,7 @@
 Captures the real executable in the GitHub Actions Windows desktop session.
 Screenshots are uploaded as an artifact so layout regressions can be reviewed.
 """
-import os
 import subprocess
-import sys
 import time
 from pathlib import Path
 
@@ -22,8 +20,10 @@ OUT.mkdir(exist_ok=True)
 def find_window(timeout=45):
     deadline = time.time() + timeout
     while time.time() < deadline:
-        matches = [w for w in pygetwindow.getWindowsWithTitle(APP_TITLE)
-                   if w.width >= 700 and w.height >= 500]
+        matches = [
+            w for w in pygetwindow.getWindowsWithTitle(APP_TITLE)
+            if w.width >= 700 and w.height >= 500
+        ]
         if matches:
             return matches[0]
         time.sleep(1)
@@ -34,7 +34,9 @@ def capture(window, filename):
     window.activate()
     time.sleep(1)
     # Capture the app window itself, excluding unrelated desktop content.
-    image = pyautogui.screenshot(region=(window.left, window.top, window.width, window.height))
+    image = pyautogui.screenshot(
+        region=(window.left, window.top, window.width, window.height)
+    )
     path = OUT / filename
     image.save(path)
     if image.width < 700 or image.height < 500:
@@ -63,15 +65,22 @@ def main():
             capture(window, f"02-tab-{name}.png")
 
         # Exercise the demo/customer-registration dialog from the header.
-        pyautogui.click(window.left + int(window.width * 0.83),
-                        window.top + 72)
+        pyautogui.click(
+            window.left + int(window.width * 0.83),
+            window.top + 72,
+        )
         time.sleep(1.2)
-        dialogs = [w for w in pygetwindow.getWindowsWithTitle("Demo erişimi")
-                   if w.isVisible]
+        dialogs = [
+            w for w in pygetwindow.getWindowsWithTitle("Demo erişimi")
+            if w.visible
+        ]
         if dialogs:
             capture(dialogs[0], "03-demo-registration.png")
         else:
-            print("Demo dialog not detected; main-window and tab screenshots were captured.")
+            print(
+                "Demo dialog not detected; main-window and tab screenshots "
+                "were captured."
+            )
         print("GUI smoke test completed.")
     finally:
         try:
