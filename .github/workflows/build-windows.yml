@@ -34,12 +34,14 @@ jobs:
           DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
         run: |
           if ([string]::IsNullOrWhiteSpace($env:GOOGLE_OAUTH_CLIENT_JSON)) {
-            throw "Missing repository secret GOOGLE_OAUTH_CLIENT_JSON. Add a Google Cloud Desktop OAuth client JSON as a GitHub Actions secret before building."
-          }
-          $env:GOOGLE_OAUTH_CLIENT_JSON | Set-Content -Path client_secrets.json -Encoding utf8
-          $config = Get-Content client_secrets.json -Raw | ConvertFrom-Json
-          if (-not $config.installed) {
-            throw "GOOGLE_OAUTH_CLIENT_JSON must be a Google OAuth Desktop app client JSON (installed)."
+            Write-Warning "Google Drive is not configured for this build. The app will still build, but Google Drive sign-in will be unavailable until GOOGLE_OAUTH_CLIENT_JSON is added."
+          } else {
+            $env:GOOGLE_OAUTH_CLIENT_JSON | Set-Content -Path client_secrets.json -Encoding utf8
+            $config = Get-Content client_secrets.json -Raw | ConvertFrom-Json
+            if (-not $config.installed) {
+              Remove-Item client_secrets.json -Force -ErrorAction SilentlyContinue
+              throw "GOOGLE_OAUTH_CLIENT_JSON must be a Google OAuth Desktop app client JSON (installed)."
+            }
           }
           if ([string]::IsNullOrWhiteSpace($env:DROPBOX_APP_KEY)) {
             Write-Host "Dropbox not configured: add DROPBOX_APP_KEY GitHub Actions secret to enable Dropbox."
@@ -110,7 +112,7 @@ jobs:
             "1. Extract this ZIP to a folder."
             "2. Run Database Yedekle.exe."
             "3. The application opens in a fixed 940 x 620 window."
-            "4. Google Drive OAuth configuration is bundled; users should only need to sign in."
+            "4. Google Drive sign-in is available only if the build was configured with a Google OAuth Desktop client. Without that secret, the rest of the app still builds but Drive sign-in is unavailable."
             "5. Dropbox is enabled when DROPBOX_APP_KEY is configured for the build; users authorize once from the app."
             "6. For remote QNAP, enable/configure SFTP on QNAP and enter its hostname, port, username, password, and remote directory."
             "7. This build is not code-signed, so Windows SmartScreen may still show a warning."
