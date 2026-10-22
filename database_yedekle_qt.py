@@ -42,7 +42,7 @@ class DemoDialog(QDialog):
         b=QDialogButtonBox();b.addButton("Talep gönder",QDialogButtonBox.ButtonRole.AcceptRole);b.addButton("Vazgeç",QDialogButtonBox.ButtonRole.RejectRole);b.accepted.connect(self.accept);b.rejected.connect(self.reject);l.addWidget(b)
 class App(QMainWindow):
     def __init__(self):
-        super().__init__();self.setWindowTitle(APP);self.resize(1020,700);self.setMinimumSize(900,600);self.setWindowIcon(QIcon(db_icon("app",64)))
+        super().__init__();self.setWindowTitle(APP);self.setFixedSize(1024,768);self.setWindowIcon(QIcon(db_icon("app",64)))
         self.bus=Bus();self.bus.scan.connect(self.scanned);self.bus.done.connect(self.backup_result);self.items=[];self.found=[]
         self.cfgdir=Path(os.getenv("APPDATA",str(Path.home())))/"DatabaseYedekle";self.cfgdir.mkdir(parents=True,exist_ok=True);self.cfgfile=self.cfgdir/"config.json"
         try:self.cfg=json.loads(self.cfgfile.read_text(encoding="utf-8"))
@@ -50,7 +50,7 @@ class App(QMainWindow):
         self.build();self.style();self.statusBar().showMessage("Hazır")
     def build(self):
         root=QWidget();root.setObjectName("root");outer=QVBoxLayout(root);outer.setContentsMargins(18,14,18,12);outer.setSpacing(14)
-        head=QHBoxLayout();logo=QLabel();logo.setPixmap(db_icon("app",54));head.addWidget(logo)
+        head=QHBoxLayout();logo=QLabel();logo.setPixmap(db_icon("app",54));logo.setFixedSize(60,60);logo.setAlignment(Qt.AlignmentFlag.AlignCenter);head.addWidget(logo)
         brand=QVBoxLayout();ey=QLabel("DATABASE YEDEKLE  /  BACKUP CONTROL");ey.setObjectName("eyebrow");title=QLabel("Güvenli yedekleme merkezi");title.setObjectName("title");sub=QLabel("SQL SERVER  •  POSTGRESQL  •  CLOUD STORAGE");sub.setObjectName("muted")
         brand.addWidget(ey);brand.addWidget(title);brand.addWidget(sub);head.addLayout(brand);head.addStretch()
         support=QPushButton("Destek");support.clicked.connect(lambda:webbrowser.open("mailto:oguzhanyilmaz8@gmail.com?subject=Database%20Yedekle%20Destek"));demo=QPushButton("Demo / Müşteri Kaydı");demo.clicked.connect(self.demo)
@@ -58,7 +58,7 @@ class App(QMainWindow):
         body=QHBoxLayout();body.setSpacing(14);side=QFrame();side.setObjectName("sidebar");side.setFixedWidth(188);sl=QVBoxLayout(side);sl.setContentsMargins(10,12,10,10);sl.setSpacing(6)
         cap=QLabel("ÇALIŞMA ALANI");cap.setObjectName("eyebrow");sl.addWidget(cap);self.nav=[];self.stack=QStackedWidget()
         for i,t in enumerate(["Veritabanları","Otomatik yedekleme","Yedekleme hedefi"]):
-            b=QPushButton(["▦","◷","⇧"][i]+"    "+t);b.setObjectName("nav");b.setCheckable(True);b.clicked.connect(lambda checked=False,j=i:self.navigate(j));sl.addWidget(b);self.nav.append(b)
+            b=QPushButton(["▤   ","◷   ","☁   "][i]+t);b.setObjectName("nav");b.setMinimumHeight(42);b.setCheckable(True);b.clicked.connect(lambda checked=False,j=i:self.navigate(j));sl.addWidget(b);self.nav.append(b)
         sl.addStretch();sl.addWidget(QLabel("DURUM"));self.side_status=QLabel("Henüz yedek alınmadı");self.side_status.setObjectName("muted");self.side_status.setWordWrap(True);sl.addWidget(self.side_status)
         body.addWidget(side);body.addWidget(self.stack,1);outer.addLayout(body,1)
         foot=QHBoxLayout();self.status=QLabel("Hazır");self.status.setObjectName("muted");foot.addWidget(self.status);foot.addStretch()
@@ -81,9 +81,9 @@ class App(QMainWindow):
             if text.startswith("＋"): b.setObjectName("primary")
             top.addWidget(b)
         top.addStretch();o.addLayout(top);split=QSplitter(Qt.Orientation.Vertical);split.setChildrenCollapsible(False)
-        c,l=self.card("Yedekleme listesi","Satıra çift tıklayarak yedeklemeye dahil etme durumunu değiştir.");self.tbl=self.table(["Dahil","Motor","Sunucu / Host","Veritabanı","Yedek adı"]);self.tbl.cellDoubleClicked.connect(self.toggle);l.addWidget(self.tbl);split.addWidget(c)
-        c,l=self.card("Arama sonuçları","Bulunan veritabanlarını seçip yedekleme listesine ekle.");self.results=self.table(["Motor","Sunucu","Bulunan veritabanı"]);l.addWidget(self.results)
-        row=QHBoxLayout();self.host_filter=QLineEdit();self.host_filter.setPlaceholderText("Sunucu adı/IP; boşsa localhost");row.addWidget(self.host_filter,1);b=QPushButton("Seçilenleri ekle");b.setObjectName("primary");b.clicked.connect(self.add_found);row.addWidget(b);l.addLayout(row);split.addWidget(c);split.setSizes([270,230]);o.addWidget(split,1);self.kind_changed(self.kind.currentText())
+        c,l=self.card("Yedekleme listesi","Satıra çift tıklayarak yedeklemeye dahil etme durumunu değiştir.");self.tbl=self.table(["Dahil","Motor","Sunucu / Host","Veritabanı","Yedek adı"]);self.tbl.setMinimumHeight(92);self.tbl.cellDoubleClicked.connect(self.toggle);l.addWidget(self.tbl);c.setMinimumHeight(175);split.addWidget(c)
+        c,l=self.card("Arama sonuçları","Bulunan veritabanlarını seçip yedekleme listesine ekle.");self.results=self.table(["Motor","Sunucu","Bulunan veritabanı"]);self.results.setMinimumHeight(92);l.addWidget(self.results);c.setMinimumHeight(205)
+        row=QHBoxLayout();self.host_filter=QLineEdit();self.host_filter.setPlaceholderText("Sunucu adı/IP; boşsa localhost");row.addWidget(self.host_filter,1);b=QPushButton("Seçilenleri ekle");b.setObjectName("primary");b.clicked.connect(self.add_found);row.addWidget(b);l.addLayout(row);split.addWidget(c);split.setStretchFactor(0,1);split.setStretchFactor(1,1);split.setSizes([210,250]);o.addWidget(split,1);self.kind_changed(self.kind.currentText())
     def schedule_ui(self):
         o=QVBoxLayout(self.schedpage);o.setContentsMargins(0,0,0,0);h=QLabel("Otomatik yedekleme");h.setObjectName("pageTitle");o.addWidget(h)
         c,l=self.card("Yedekleme planı","Seçtiğin veritabanları uygulama açıkken belirlenen aralıkta yedeklenir.");self.auto=QCheckBox("Otomatik yedeklemeyi etkinleştir");l.addWidget(self.auto)
@@ -97,8 +97,8 @@ class App(QMainWindow):
         row=QHBoxLayout();row.addWidget(QLabel("Hedef"));self.target=QComboBox();self.target.addItems(["Yerel klasör","Google Drive","Dropbox","S3 uyumlu depolama","QNAP / SFTP"]);self.target.currentTextChanged.connect(self.target_changed);row.addWidget(self.target);row.addStretch();l.addLayout(row)
         self.pages=QStackedWidget();self.pages.setMinimumHeight(250);l.addWidget(self.pages,1)
         w=QWidget();g=QGridLayout(w);self.local=QLineEdit(str(Path.home()/"DatabaseBackups"));b=QPushButton("Klasör seç");b.clicked.connect(self.browse);g.addWidget(QLabel("Yerel yedek klasörü"),0,0);g.addWidget(self.local,1,0);g.addWidget(b,1,1);self.pages.addWidget(w)
-        self.pages.addWidget(self.notice("Google Drive","Google OAuth Desktop istemci bilgisi ve izinler yapılandırılmış olmalıdır."))
-        self.pages.addWidget(self.notice("Dropbox","Dropbox OAuth uygulama anahtarıyla bağlantı kurulmalıdır."))
+        self.google_page=self.oauth_page("Google Drive","Google hesabını bağla","Google OAuth Desktop istemci bilgisi (GOOGLE_OAUTH_CLIENT_JSON) yapılandırılmalıdır.",self.connect_google);self.pages.addWidget(self.google_page)
+        self.dropbox_page=self.oauth_page("Dropbox","Dropbox hesabını bağla","Dropbox uygulama anahtarı (DROPBOX_APP_KEY) yapılandırılmalıdır.",self.connect_dropbox);self.pages.addWidget(self.dropbox_page)
         w=QWidget();g=QGridLayout(w);self.endpoint=QLineEdit();self.endpoint.setPlaceholderText("Endpoint URL (AWS S3 için boş bırakılabilir)");self.bucket=QLineEdit();self.region=QLineEdit("us-east-1");self.access=QLineEdit();self.secret=QLineEdit();self.secret.setEchoMode(QLineEdit.EchoMode.Password);self.remote_folder=QLineEdit("DatabaseBackups")
         g.addWidget(QLabel("Endpoint"),0,0);g.addWidget(QLabel("Bucket"),0,1);g.addWidget(self.endpoint,1,0);g.addWidget(self.bucket,1,1);g.addWidget(QLabel("Region"),2,0);g.addWidget(QLabel("Access key"),2,1);g.addWidget(self.region,3,0);g.addWidget(self.access,3,1);g.addWidget(QLabel("Secret key"),4,0);g.addWidget(self.secret,5,0,1,2);g.addWidget(QLabel("Bulut klasörü"),6,0);g.addWidget(self.remote_folder,7,0,1,2);self.pages.addWidget(w)
         w=QWidget();g=QGridLayout(w);self.shost=QLineEdit();self.sport=QLineEdit("22");self.suser=QLineEdit();self.spass=QLineEdit();self.spass.setEchoMode(QLineEdit.EchoMode.Password);self.spath=QLineEdit("/share/Backups")
@@ -106,6 +106,16 @@ class App(QMainWindow):
             g.addWidget(QLabel(lab),pos//3*2,pos%3);g.addWidget(widget,pos//3*2+1,pos%3)
         self.pages.addWidget(w)
         row=QHBoxLayout();save=QPushButton("Ayarları kaydet");save.setObjectName("primary");save.clicked.connect(self.save_cfg);test=QPushButton("Bağlantıyı test et");test.clicked.connect(self.test_target);row.addWidget(save);row.addWidget(test);row.addStretch();l.addLayout(row);o.addWidget(c,1);self.target_changed(self.target.currentText())
+    def oauth_page(self,title,button_text,desc,callback):
+        w=QWidget();l=QVBoxLayout(w);l.setContentsMargins(8,12,8,8);h=QLabel(title);h.setObjectName("section");d=QLabel(desc);d.setObjectName("muted");d.setWordWrap(True);l.addWidget(h);l.addWidget(d);b=QPushButton(button_text);b.setObjectName("primary");b.clicked.connect(callback);l.addWidget(b,0,Qt.AlignmentFlag.AlignLeft);self.oauth_labels=getattr(self,"oauth_labels",{});self.oauth_labels[title]=QLabel("Bağlı değil");self.oauth_labels[title].setObjectName("muted");l.addWidget(self.oauth_labels[title]);l.addStretch();return w
+    def connect_google(self):
+        p=asset("client_secrets.json")
+        if not p.exists():QMessageBox.warning(self,"Google Drive yapılandırılmamış","Google OAuth Desktop JSON dosyası derlemeye eklenmemiş. GitHub Actions > Settings > Secrets and variables > Actions bölümüne GOOGLE_OAUTH_CLIENT_JSON ekleyip yeni EXE derle.");return
+        QMessageBox.information(self,"Google Drive","Google OAuth istemci bilgisi bulundu. Bu sürümde Google Drive OAuth akışı ve yükleyici henüz bağlanmadı.");
+    def connect_dropbox(self):
+        p=asset("dropbox_app_key.txt")
+        if not p.exists():QMessageBox.warning(self,"Dropbox yapılandırılmamış","GitHub Actions secret DROPBOX_APP_KEY eksik. Secret eklendikten sonra yeni EXE derle.");return
+        QMessageBox.information(self,"Dropbox","Dropbox uygulama anahtarı bulundu. Bu sürümde OAuth akışı ve Dropbox yükleyicisi henüz bağlanmadı.");
     def notice(self,title,desc):
         w=QWidget();l=QVBoxLayout(w);h=QLabel(title);h.setObjectName("section");d=QLabel(desc);d.setObjectName("muted");d.setWordWrap(True);l.addWidget(h);l.addWidget(d);l.addStretch();return w
     def style(self):
@@ -113,12 +123,12 @@ class App(QMainWindow):
         *{font-family:'Segoe UI';font-size:10pt} QMainWindow,QWidget#root{background:#080D19;color:#EDF3FF}
         QFrame#sidebar{background:#0E1628;border:1px solid #1D2A42;border-radius:18px} QFrame#card{background:#101A2D;border:1px solid #263752;border-radius:16px}
         QLabel{color:#E8F0FF;background:transparent} QLabel#title{font-size:23pt;font-weight:750} QLabel#pageTitle{font-size:20pt;font-weight:750;padding:2px 0 4px 0} QLabel#section{font-size:12pt;font-weight:700}
-        QLabel#eyebrow{color:#22D3EE;font-size:8pt;font-weight:700;letter-spacing:1px} QLabel#muted{color:#91A4C5;font-size:9pt}
+        QLabel#eyebrow{color:#5AB8C5;font-size:8pt;font-weight:700;letter-spacing:1px} QLabel#muted{color:#91A4C5;font-size:9pt}
         QPushButton{color:#E8F0FF;background:#19263D;border:1px solid #2A3B58;border-radius:9px;padding:9px 11px;font-weight:650} QPushButton:hover{background:#263954;border-color:#456184} QPushButton:pressed{background:#101A2D}
-        QPushButton#primary{background:#6D45E8;color:white;border:1px solid #8B73FF;border-radius:10px;padding:11px 17px} QPushButton#primary:hover{background:#805FF0}
-        QPushButton#nav{text-align:left;background:transparent;border:0;padding:12px 10px;color:#A6B7D4} QPushButton#nav:hover{background:#17233A} QPushButton#nav:checked{background:#1A2C43;color:#22D3EE;border-left:3px solid #22D3EE}
+        QPushButton#primary{background:#4B5FA8;color:white;border:1px solid #667ABF;border-radius:9px;padding:10px 14px} QPushButton#primary:hover{background:#596EBA}
+        QPushButton#nav{text-align:left;background:transparent;border:0;padding:12px 10px;color:#A6B7D4} QPushButton#nav:hover{background:#17233A} QPushButton#nav:checked{background:#1A2C43;color:#77C7D0;border-left:3px solid #5AB8C5}
         QLineEdit,QComboBox{background:#0B1425;color:#EDF3FF;border:1px solid #2B3D5A;border-radius:8px;padding:8px 10px;selection-background-color:#5B21B6;min-height:18px}
-        QLineEdit:focus,QComboBox:focus{border:1px solid #22D3EE} QComboBox QAbstractItemView{background:#111A2E;color:#E8F0FF;selection-background-color:#3730A3}
+        QLineEdit:focus,QComboBox:focus{border:1px solid #5AB8C5} QComboBox QAbstractItemView{background:#111A2E;color:#E8F0FF;selection-background-color:#3730A3}
         QCheckBox{spacing:9px;color:#D9E5FA;padding:5px 0} QCheckBox::indicator{width:17px;height:17px} QCheckBox::indicator:unchecked{background:#0D172A;border:1px solid #4A5D7B;border-radius:4px} QCheckBox::indicator:checked{background:#7C3AED;border:1px solid #A78BFA;border-radius:4px}
         QTableWidget{background:#0B1425;alternate-background-color:#101C30;color:#E2EBFC;border:1px solid #263752;border-radius:11px;gridline-color:transparent;selection-background-color:#293D62;selection-color:white;outline:0}
         QTableWidget::item{padding:11px 9px;border-bottom:1px solid #1A2940} QHeaderView::section{background:#17253D;color:#C9D8F0;border:0;border-bottom:1px solid #2C405F;padding:13px 10px;font-weight:700}
@@ -237,7 +247,7 @@ class App(QMainWindow):
         d=DemoDialog(self)
         if d.exec()!=QDialog.DialogCode.Accepted:return
         k=asset("supabase_anon_key.txt")
-        if not k.exists():QMessageBox.warning(self,"Demo servisi yapılandırılmamış","GitHub Actions secret SUPABASE_ANON_KEY eksik.");return
+        if not k.exists():QMessageBox.warning(self,"Demo servisi yapılandırılmamış","Bu hata, EXE oluşturulurken SUPABASE_ANON_KEY secret'ının bulunmadığını gösteriyor. GitHub deposunda Settings → Secrets and variables → Actions bölümüne Supabase projesinin anon/publishable anahtarını SUPABASE_ANON_KEY adıyla ekle ve yeni EXE derle. Anahtarı uygulama içinden veya herkese açık sohbette paylaşma.");return
         key=k.read_text(encoding="utf-8").strip();payload=json.dumps({"company":d.company.text().strip(),"name":d.person.text().strip(),"phone":d.phone.text().strip(),"email":d.email.text().strip()}).encode()
         req=urllib.request.Request(SUPABASE+"/functions/v1/demo-request",data=payload,headers={"Content-Type":"application/json","apikey":key,"Authorization":"Bearer "+key},method="POST")
         try:
