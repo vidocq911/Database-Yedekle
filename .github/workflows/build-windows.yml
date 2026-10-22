@@ -3,11 +3,9 @@ name: Build Windows EXE
 on:
   push:
     branches: [main, feature/licensing-customer-management]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
-# A push and a pull-request sync can target the same branch. Keep only the newest run.
+# Keep only the newest build for each branch.
 concurrency:
   group: build-windows-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
