@@ -32,6 +32,7 @@ jobs:
         env:
           GOOGLE_OAUTH_CLIENT_JSON: ${{ secrets.GOOGLE_OAUTH_CLIENT_JSON }}
           DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           if ([string]::IsNullOrWhiteSpace($env:GOOGLE_OAUTH_CLIENT_JSON)) {
             Write-Warning "Google Drive is not configured for this build. The app will still build, but Google Drive sign-in will be unavailable until GOOGLE_OAUTH_CLIENT_JSON is added."
@@ -42,6 +43,11 @@ jobs:
               Remove-Item client_secrets.json -Force -ErrorAction SilentlyContinue
               throw "GOOGLE_OAUTH_CLIENT_JSON must be a Google OAuth Desktop app client JSON (installed)."
             }
+          }
+          if ([string]::IsNullOrWhiteSpace($env:SUPABASE_ANON_KEY)) {
+            Write-Warning "Demo registration is disabled until SUPABASE_ANON_KEY is configured as a repository secret."
+          } else {
+            $env:SUPABASE_ANON_KEY | Set-Content -Path supabase_anon_key.txt -Encoding utf8
           }
           if ([string]::IsNullOrWhiteSpace($env:DROPBOX_APP_KEY)) {
             Write-Host "Dropbox not configured: add DROPBOX_APP_KEY GitHub Actions secret to enable Dropbox."
@@ -94,6 +100,7 @@ jobs:
           if (Test-Path vendor-tools) { Get-ChildItem vendor-tools -File | ForEach-Object { $data += @("--add-binary", "$($_.FullName);.") } }
           if (Test-Path client_secrets.json) { $data += @("--add-data", "client_secrets.json;.") }
           if (Test-Path dropbox_app_key.txt) { $data += @("--add-data", "dropbox_app_key.txt;.") }
+          if (Test-Path supabase_anon_key.txt) { $data += @("--add-data", "supabase_anon_key.txt;.") }
           if (Test-Path license-public-jwk.json) { $data += @("--add-data", "license-public-jwk.json;.") }
           $common += @("--collect-all","dropbox")
           python -m PyInstaller @common @data
@@ -135,6 +142,7 @@ jobs:
           ) | Set-Content -Encoding utf8 package/README.txt
           if (Test-Path client_secrets.json) { Remove-Item client_secrets.json -Force }
           if (Test-Path dropbox_app_key.txt) { Remove-Item dropbox_app_key.txt -Force }
+          if (Test-Path supabase_anon_key.txt) { Remove-Item supabase_anon_key.txt -Force }
           Compress-Archive -Path package/* -DestinationPath "Database-Yedekle-Windows.zip" -Force
 
       - name: Upload ZIP package

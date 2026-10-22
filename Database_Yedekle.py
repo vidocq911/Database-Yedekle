@@ -100,6 +100,10 @@ class App(tk.Tk):
         s.configure("TEntry",fieldbackground=CARD,foreground="#E7EEFF",insertcolor="#FFFFFF",padding=7)
         s.configure("TCheckbutton",background=BG,foreground="#DCE7FF",font=("Segoe UI",10))
         s.map("TCheckbutton",background=[("active",BG)],foreground=[("active","#FFFFFF")])
+        s.configure("TScrollbar",background="#202B43",troughcolor=BG,arrowcolor="#AFC2E8",bordercolor=BG,lightcolor="#202B43",darkcolor="#202B43",relief="flat",arrowsize=12)
+        s.map("TScrollbar",background=[("active","#344563"),("pressed","#7C3AED")])
+        s.configure("TPanedwindow",background=BG,borderwidth=0,sashwidth=5,sashrelief="flat")
+        s.configure("TSeparator",background="#26334D")
         s.configure("TNotebook",background=BG,borderwidth=0,tabmargins=(0,0,0,0),padding=0)
         s.configure("TNotebook.Tab",padding=(13,8),font=("Segoe UI",9,"bold"),background="#151E32",foreground="#8393B3",borderwidth=0,relief="flat")
         s.map("TNotebook.Tab",
@@ -178,6 +182,19 @@ class App(tk.Tk):
             self.db_icon.create_oval(20,9,23,12,fill="white",outline="")
             self.db_icon.create_oval(21,10,22,11,fill="#17243A",outline="")
 
+    def _supabase_anon_key(self):
+        paths=[]
+        if getattr(sys,"frozen",False):
+            paths.extend([Path(getattr(sys,"_MEIPASS",Path(sys.executable).parent))/"supabase_anon_key.txt",Path(sys.executable).parent/"supabase_anon_key.txt"])
+        else:
+            paths.append(Path(__file__).parent/"supabase_anon_key.txt")
+        for path in paths:
+            try:
+                if path.is_file(): return path.read_text(encoding="utf-8").strip()
+            except Exception:
+                pass
+        return ""
+
     def open_demo_registration(self):
         win=tk.Toplevel(self)
         win.title("Demo erişimi ve müşteri kaydı")
@@ -203,7 +220,11 @@ class App(tk.Tk):
             button.configure(state="disabled",text="Gönderiliyor…")
             try:
                 data=json.dumps(payload).encode("utf-8")
-                req=urllib.request.Request(SUPABASE_URL+"/functions/v1/demo-request",data=data,headers={"Content-Type":"application/json","Accept":"application/json"},method="POST")
+                anon_key = self._supabase_anon_key()
+                if not anon_key:
+                    raise RuntimeError("Demo kayıt servisi yapılandırılmamış: GitHub Actions SUPABASE_ANON_KEY secret eksik.")
+                headers={"Content-Type":"application/json","Accept":"application/json","apikey":anon_key,"Authorization":"Bearer "+anon_key}
+                req=urllib.request.Request(SUPABASE_URL+"/functions/v1/demo-request",data=data,headers=headers,method="POST")
                 with urllib.request.urlopen(req,timeout=20) as response:
                     body=json.loads(response.read().decode("utf-8"))
                 message=body.get("message","Talep alındı.")
