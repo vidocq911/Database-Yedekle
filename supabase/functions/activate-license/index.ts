@@ -80,16 +80,62 @@ Deno.serve(async (req) => {
     return json({ success: false, error: code }, status);
   }
 
-  return json({
-    success: true,
-    status: data.code,
-    license_id: data.license_id,
-    starts_at: data.starts_at,
-    expires_at: data.expires_at,
-    device_id: data.device_id,
-    verification_interval_hours: 168,
-    offline_grace_hours: 168,
-    signed_response: false,
-    message: "Lisans doğrulandı. Bu yanıt henüz imzalı değildir; çevrimdışı lisans güvenliği tamamlanmış sayılmaz.",
-  });
+  // Signed envelope lets the desktop client verify the payload with an embedded
+  // Ed25519 public key. The private JWK must exist only as an Edge Function secret.
+  const privateJwkRaw = Deno.env.get("LICENSE_SIGNING_PRIVATE_JWK");
+  if (!privateJwkRaw) {
+    return json({ success: false, error: "license_signing_not_configured" }, 503);
+  }
+
+  let privateJwk: JsonWebKey;
+  try {
+    privateJwk = JSON.parse(privateJwkRaw) as JsonWebKey;
+  } catch {
+    return json({ success: false, error: "license_signing_key_invalid" }, 500);
+  }
+
+  try {
+    const signingKey = await crypto.subtle.importKey(
+      "jwk",
+      privateJwk,
+      { name: "Ed25519" },
+      false,
+      ["sign"],
+    );
+    const issuedAt = new Date().toISOString();
+    const payload = {
+      schema_version: 1,
+      success: true,
+      status: data.code,
+      license_id: data.license_id,
+      starts_at: data.starts_at,
+      expires_at: data.expires_at,
+      device_id: data.device_id,
+      device_fingerprint_hash: deviceHash,
+      issued_at: issuedAt,
+      verify_again_after: new Date(Date.now() + 168 * 60 * 60 * 1000).toISOString(),
+      offline_grace_until: new Date(Date.now() + 336 * 60 * 60 * 1000).toISOString(),
+    };
+    const encodedPayload = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(payload))))
+      .replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+    const signatureBytes = await crypto.subtle.sign(
+      { name: "Ed25519" },
+      signingKey,
+      new TextEncoder().encode(encodedPayload),
+    );
+    const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)))
+      .replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+
+    return json({
+      success: true,
+      signed_response: true,
+      algorithm: "Ed25519",
+      payload: encodedPayload,
+      signature,
+      message: "Lisans doğrulandı. İstemci, imzayı gömülü açık anahtarla doğrulamalıdır.",
+    });
+  } catch (error) {
+    console.error("license response signing failed", error instanceof Error ? error.message : "unknown");
+    return json({ success: false, error: "license_signing_failed" }, 500);
+  }
 });
