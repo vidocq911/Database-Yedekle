@@ -26,6 +26,7 @@ class App(tk.Tk):
         self.geometry("900x620")
         self.resizable(False, False)
         self.configure(bg=BG)
+        self._set_app_icon()
         self.items, self.found = [], []
         self.dbtype = tk.StringVar(value="SQL Server")
         self.local = tk.StringVar(value=str(Path.home()/"DatabaseBackups"))
@@ -47,6 +48,23 @@ class App(tk.Tk):
         self._load()
         self.after(3000, self._scheduler)
 
+    def _set_app_icon(self):
+        # Uygulama simgesi: yedekleme veritabanı ve bulut işareti.
+        try:
+            from PIL import Image, ImageDraw, ImageTk
+            im = Image.new("RGBA", (64, 64), "#10284a")
+            d = ImageDraw.Draw(im)
+            d.rounded_rectangle((7, 7, 45, 52), radius=10, fill="#173e6a", outline="#55d8ff", width=3)
+            d.ellipse((10, 9, 42, 22), fill="#10284a", outline="#55d8ff", width=3)
+            d.arc((10, 16, 42, 29), 0, 180, fill="#55d8ff", width=3)
+            d.arc((10, 27, 42, 40), 0, 180, fill="#55d8ff", width=3)
+            d.ellipse((34, 33, 57, 55), fill="#2695ff", outline="#b8f2ff", width=2)
+            d.line((39, 44, 44, 49, 52, 39), fill="white", width=3)
+            self._icon_image = ImageTk.PhotoImage(im)
+            self.iconphoto(True, self._icon_image)
+        except Exception:
+            pass
+
     def _style(self):
         s=ttk.Style(self)
         try:s.theme_use("clam")
@@ -62,17 +80,26 @@ class App(tk.Tk):
         s.map("Primary.TButton",background=[("active","#1D4ED8")],foreground=[("active","white")])
         s.configure("Treeview",rowheight=22,font=("Segoe UI",9),background="white",fieldbackground="white")
         s.configure("Treeview.Heading",font=("Segoe UI",9,"bold"),background="#E8EEF6",foreground=NAVY,padding=7)
-        s.configure("TNotebook",background=BG,borderwidth=0)
-        s.configure("TNotebook.Tab",padding=(11,6),font=("Segoe UI",9,"bold"))
-        s.map("TNotebook.Tab",background=[("selected","white")],foreground=[("selected",BLUE)])
+        s.configure("TNotebook",background=BG,borderwidth=0,tabmargins=(0,0,0,0))
+        s.configure("TNotebook.Tab",padding=(13,7),font=("Segoe UI",9,"bold"),background="#E7EDF5",foreground=MUTED)
+        s.map("TNotebook.Tab",background=[("selected","white"),("active","#DCE9FA")],foreground=[("selected",BLUE),("active",NAVY)])
 
     def _build(self):
         shell=ttk.Frame(self,padding=10); shell.pack(fill="both",expand=True)
         head=ttk.Frame(shell);head.pack(fill="x",pady=(0,7))
-        ttk.Label(head,text="Database Yedekle",style="Title.TLabel").pack(anchor="w")
-        ttk.Label(head,text="Veritabanı yedeklerini planla, sıkıştır ve Google Drive'a güvenle aktar.",style="Muted.TLabel").pack(anchor="w",pady=(3,0))
+        logo=tk.Canvas(head,width=42,height=42,bg=BG,highlightthickness=0)
+        logo.pack(side="left",padx=(0,10))
+        logo.create_rounded_rectangle = None
+        logo.create_oval(3,3,37,17,fill="#10284a",outline="#2695ff",width=2)
+        logo.create_rectangle(3,10,37,31,fill="#173e6a",outline="#2695ff",width=2)
+        logo.create_arc(3,18,37,32,start=0,extent=180,style="arc",outline="#55d8ff",width=2)
+        logo.create_oval(23,22,41,40,fill="#2695ff",outline="#b8f2ff",width=1)
+        logo.create_line(27,31,31,35,37,27,fill="white",width=2)
+        headtext=ttk.Frame(head);headtext.pack(side="left",fill="x",expand=True)
+        ttk.Label(headtext,text="Database Yedekle",style="Title.TLabel").pack(anchor="w")
+        ttk.Label(headtext,text="Yedeklerini yönet • yerel disk • Google Drive • QNAP",style="Muted.TLabel").pack(anchor="w",pady=(2,0))
         self.tabs=ttk.Notebook(shell);self.tabs.pack(fill="both",expand=True)
-        self.dbtab=ttk.Frame(self.tabs,padding=8);self.schedtab=ttk.Frame(self.tabs,padding=10);self.storagetab=ttk.Frame(self.tabs,padding=10)
+        self.dbtab=ttk.Frame(self.tabs,padding=7);self.schedtab=ttk.Frame(self.tabs,padding=8);self.storagetab=ttk.Frame(self.tabs,padding=8)
         self.tabs.add(self.dbtab,text="  Veritabanları  ")
         self.tabs.add(self.schedtab,text="  Otomatik Yedekleme  ")
         self.tabs.add(self.storagetab,text="  Yedekleme Hedefi  ")
@@ -101,8 +128,8 @@ class App(tk.Tk):
         ttk.Button(actions,text="Tümünü Dahil Et",command=lambda:self.set_all(True)).pack(side="left")
         ttk.Button(actions,text="Hiçbirini Seçme",command=lambda:self.set_all(False)).pack(side="left",padx=6)
         ttk.Button(actions,text="Yedek Adını Düzenle",command=self.rename).pack(side="right")
-        ttk.Label(self.dbtab,text="Arama sonuçları",style="Section.TLabel").pack(anchor="w",pady=(14,4))
-        self.foundtree=ttk.Treeview(self.dbtab,columns=("pick","type","server","db"),show="headings",height=4,selectmode="extended")
+        ttk.Label(self.dbtab,text="Arama sonuçları",style="Section.TLabel").pack(anchor="w",pady=(8,3))
+        self.foundtree=ttk.Treeview(self.dbtab,columns=("pick","type","server","db"),show="headings",height=3,selectmode="extended")
         for col,title,width in [("pick","Ekle",50),("type","Tür",100),("server","Sunucu",180),("db","Bulunan veritabanı",250)]:
             self.foundtree.heading(col,text=title);self.foundtree.column(col,width=width,anchor="w")
         self.foundtree.pack(fill="x")
@@ -112,8 +139,8 @@ class App(tk.Tk):
 
     def _build_schedule(self):
         ttk.Label(self.schedtab,text="Yedekleme planı",style="Title.TLabel").pack(anchor="w")
-        ttk.Label(self.schedtab,text="Seçtiğin veritabanları belirlenen aralıkta yedeklenir.",style="Muted.TLabel").pack(anchor="w",pady=(4,18))
-        card=ttk.Frame(self.schedtab,padding=16);card.pack(fill="x")
+        ttk.Label(self.schedtab,text="Seçtiğin veritabanları belirlenen aralıkta yedeklenir.",style="Muted.TLabel").pack(anchor="w",pady=(3,10))
+        card=ttk.Frame(self.schedtab,padding=12);card.pack(fill="x")
         ttk.Checkbutton(card,text="Otomatik yedeklemeyi etkinleştir",variable=self.auto,command=self.save).grid(row=0,column=0,sticky="w",columnspan=2,pady=(0,16))
         ttk.Label(card,text="Yedekleme sıklığı").grid(row=1,column=0,sticky="w",pady=7)
         ttk.Combobox(card,textvariable=self.interval,values=["Günlük","Haftalık","Aylık","3 aylık"],state="readonly",width=18).grid(row=1,column=1,sticky="w",padx=12)
@@ -145,9 +172,9 @@ class App(tk.Tk):
             ttk.Label(cell,text=label).pack(anchor="w")
             ttk.Entry(cell,textvariable=var,width=width,show=show).pack(fill="x")
             grid.columnconfigure(col,weight=1)
-        ttk.Label(self.storagetab,text="Uzak klasör (örn. /share/Backups veya SFTP ana dizinine göre Backups)").pack(anchor="w",pady=(7,0))
-        ttk.Entry(self.storagetab,textvariable=self.qnap_path).pack(fill="x",pady=(3,8))
-        statusrow=ttk.Frame(self.storagetab);statusrow.pack(fill="x",pady=(2,8))
+        ttk.Label(self.storagetab,text="Uzak klasör (örn. /share/Backups veya SFTP ana dizinine göre Backups)").pack(anchor="w",pady=(5,0))
+        ttk.Entry(self.storagetab,textvariable=self.qnap_path).pack(fill="x",pady=(2,5))
+        statusrow=ttk.Frame(self.storagetab);statusrow.pack(fill="x",pady=(1,5))
         ttk.Button(statusrow,text="Google hesabını bağla",command=self.connect_google).pack(side="left")
         ttk.Button(statusrow,text="Google bağlantısını kes / hesabı unut",command=self.disconnect_google).pack(side="left",padx=6)
         ttk.Button(statusrow,text="QNAP bağlantısını test et",command=self.test_sftp).pack(side="left",padx=6)
