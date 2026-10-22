@@ -40,6 +40,8 @@ Deploy these functions from the current branch when ready:
 - `supabase/functions/activate-license/index.ts`
 - `supabase/functions/release-license-device/index.ts`
 
+Before deploying `activate-license`, configure `LICENSE_SIGNING_PRIVATE_JWK` as a Supabase Edge Function secret containing an Ed25519 private JWK JSON object. Generate a fresh Ed25519 key pair in a trusted local environment; store only the private JWK in Supabase secrets and embed only the public key in the desktop client. Never commit either key to GitHub. The activation response is signed over a base64url-encoded JSON payload; the desktop client must verify the Ed25519 signature before trusting any payload fields. The payload sets `verify_again_after` to 168 hours and `offline_grace_until` to 336 hours after issuance. These timestamps are only effective if the desktop app enforces them and checks the device fingerprint hash.
+
 Keep JWT verification enabled for `admin-review-demo`; the function additionally validates the user's access token and checks `public.admin_users` for an active `owner` or `admin` role. The public `demo-request` endpoint intentionally accepts unauthenticated requests. CORS is not authentication; before production, add edge rate limiting and CAPTCHA/bot protection. The `create-license` endpoint requires an authenticated active `owner` or `admin`, accepts an active customer ID, and returns a newly generated license key only once while storing only its SHA-256 hash. The `activate-license` endpoint accepts a license key and device fingerprint, hashes both server-side, and atomically binds the license to one device. A different device is rejected until an administrator releases the current device using `release-license-device`.
 
 The admin-review handler calls `public.review_demo_request_atomic`, which updates the demo request, customer status, and audit event in a single database transaction. Apply migration `202610220003_atomic_demo_review.sql` before deploying the updated admin-review function; without it, the function returns an explicit error. The activation and device-release handlers call `public.activate_license_atomic` and `public.release_license_device_atomic`; apply migration `202610220004_license_activation_and_device_release.sql` first.
@@ -58,7 +60,7 @@ The admin-review handler calls `public.review_demo_request_atomic`, which update
 - Build and test the admin UI.
 - Move approval/rejection + customer status + audit event into one transaction/RPC.
 - Verify unauthorized, non-admin, approve, reject, duplicate-review, and partial-failure cases.
-- Implement cryptographically signed license responses and the desktop client's 168-hour online verification plus 168-hour offline grace. Activation/release endpoints now have source implementations but have not been deployed or end-to-end tested. The activation response explicitly marks `signed_response: false`; do not treat it as production-grade offline licensing.
+- Integrate signature verification and the 168-hour online verification / 168-hour offline grace rules into the desktop client. The server endpoint now requires `LICENSE_SIGNING_PRIVATE_JWK` and returns an Ed25519-signed response, but it has not been deployed or end-to-end tested.
 - Integrate the Windows app without embedding a service-role/secret key or private signing key.
 - Run Supabase security advisors and confirm no anonymous/authenticated grants or policies expose private customer/license/payment records.
 - Do not enable production auto-deploy until migrations and functions are reviewed and tested.
