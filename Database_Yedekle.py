@@ -82,9 +82,15 @@ class App(tk.Tk):
         s.map("Primary.TButton",background=[("active","#1D4ED8")],foreground=[("active","white")])
         s.configure("Treeview",rowheight=30,font=("Segoe UI",10),background=CARD,fieldbackground=CARD,foreground=NAVY,borderwidth=0)
         s.configure("Treeview.Heading",font=("Segoe UI",10,"bold"),background="#E8EEF6",foreground=NAVY,padding=10)
-        s.configure("TNotebook",background=BG,borderwidth=0,tabmargins=(0,0,0,0))
-        s.configure("TNotebook.Tab",padding=(18,11),font=("Segoe UI",10,"bold"),background="#E7EDF5",foreground=MUTED)
-        s.map("TNotebook.Tab",background=[("selected","white"),("active","#DCE9FA")],foreground=[("selected",BLUE),("active",NAVY)])
+        # Keep notebook tabs on a single visual baseline; remove the default
+        # platform-dependent raised/stepped tab treatment.
+        s.configure("TNotebook",background=BG,borderwidth=0,tabmargins=(0,0,0,0),padding=0)
+        s.configure("TNotebook.Tab",padding=(20,12),font=("Segoe UI",10,"bold"),background="#E7EDF5",foreground=MUTED,borderwidth=0,relief="flat")
+        s.map("TNotebook.Tab",
+              background=[("selected",CARD),("active","#DCE9FA")],
+              foreground=[("selected",BLUE),("active",NAVY)],
+              padding=[("selected",(20,12)),("!selected",(20,12))],
+              relief=[("selected","flat"),("!selected","flat")])
 
     def _build(self):
         shell=ttk.Frame(self,padding=10); shell.pack(fill="both",expand=True)
