@@ -183,12 +183,21 @@ class App(tk.Tk):
         from google.oauth2.credentials import Credentials
         from google.auth.transport.requests import Request
         token=self._config_dir()/"google_token.json"
-        base=Path(sys.executable).parent if getattr(sys,"frozen",False) else Path(__file__).parent
-        secrets=base/"client_secrets.json"
-        if not secrets.exists():
-            chosen=filedialog.askopenfilename(title="Google OAuth istemci JSON dosyasını seç",filetypes=[("JSON dosyaları","*.json"),("Tüm dosyalar","*.*")],parent=self)
-            if not chosen: raise RuntimeError("Google bağlantısı için OAuth istemci JSON dosyası seçilmedi.")
-            secrets=Path(chosen)
+        # OAuth istemci yapılandırması uygulamayla birlikte paketlenir.
+        # _MEIPASS, PyInstaller --add-data ile eklenen dosyaların geçici konumudur.
+        candidates = []
+        if getattr(sys, "frozen", False):
+            candidates.append(Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)) / "client_secrets.json")
+            candidates.append(Path(sys.executable).parent / "client_secrets.json")
+        else:
+            candidates.append(Path(__file__).parent / "client_secrets.json")
+        secrets = next((p for p in candidates if p.is_file()), None)
+        if secrets is None:
+            raise RuntimeError(
+                "Bu uygulama paketi Google Drive bağlantısı için yapılandırılmamış. "
+                "Uygulamanın geliştiricisi Google OAuth Desktop istemci ayarlarını "
+                "build işlemine eklemeli. Kullanıcının ayrıca JSON dosyası bulması gerekmemeli."
+            )
         creds=None
         if token.exists():
             try:creds=Credentials.from_authorized_user_file(str(token),SCOPES)
