@@ -20,16 +20,33 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install PyInstaller
-        run: python -m pip install --upgrade pip pyinstaller google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pyinstaller pillow google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko
 
       - name: Build executable
         run: python -m PyInstaller --noconfirm --clean --onefile --windowed --collect-all googleapiclient --collect-all google_auth_oauthlib --collect-all google.auth --name "Database Yedekle" Database_Yedekle.py
 
-      - name: Upload EXE artifact
+      - name: Create distribution package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item "dist/Database Yedekle.exe" package/
+          @'
+          Database Yedekle - Windows
+          ==========================
+          1. Extract this ZIP to a folder.
+          2. Run "Database Yedekle.exe".
+          3. For Google Drive, click "Google hesabını bağla". When prompted, select the OAuth Desktop client JSON file downloaded from your own Google Cloud project (client_secrets.json).
+          4. Keep that JSON private; do not upload it to a public repository.
+          5. For remote QNAP, enable/configure SFTP on QNAP and enter its reachable hostname, port, username, password, and remote directory.
+          6. The first launch may show Microsoft Defender SmartScreen because this build is not code-signed. Only run it if you trust the source and have inspected the project.
+          '@ | Set-Content -Encoding utf8 package/README.txt
+          Compress-Archive -Path package/* -DestinationPath "Database-Yedekle-Windows.zip" -Force
+
+      - name: Upload ZIP package
         uses: actions/upload-artifact@v4
         with:
           name: Database-Yedekle-Windows
-          path: dist/Database Yedekle.exe
+          path: Database-Yedekle-Windows.zip
           if-no-files-found: error
           retention-days: 30
