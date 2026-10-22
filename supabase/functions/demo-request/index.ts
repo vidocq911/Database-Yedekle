@@ -1,5 +1,5 @@
 // Public demo request endpoint. Deploy as a Supabase Edge Function with
-// SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY configured as function secrets.
+// SUPABASE_URL and the built-in SUPABASE_SECRET_KEYS configured by Supabase.
 // Do not expose the service-role key to the Windows client or browser.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -15,6 +15,22 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json; charset=utf-8" },
   });
+}
+
+function getSecretKey(): string | null {
+  const raw = Deno.env.get("SUPABASE_SECRET_KEYS");
+  if (raw) {
+    try {
+      const keys: unknown = JSON.parse(raw);
+      if (keys && typeof keys === "object" && "default" in keys) {
+        const key = (keys as Record<string, unknown>).default;
+        if (typeof key === "string" && key.length > 0) return key;
+      }
+    } catch {
+      // Fall back to the legacy service-role key for older projects.
+    }
+  }
+  return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 }
 
 function normalizePhone(value: string) {
@@ -49,7 +65,7 @@ Deno.serve(async (req: Request) => {
   if (email && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) return json({ error: "E-posta adresini kontrol edin." }, 400);
 
   const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const serviceKey = getSecretKey();
   if (!url || !serviceKey) return json({ error: "Sunucu yapılandırması eksik." }, 500);
 
   const supabase = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
