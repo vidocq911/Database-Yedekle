@@ -89,7 +89,7 @@ jobs:
             "5. For remote QNAP, enable/configure SFTP on QNAP and enter its hostname, port, username, password, and remote directory."
             "6. This build is not code-signed, so Windows SmartScreen may still show a warning."
           ) | Set-Content -Encoding utf8 package/README.txt
-          Remove-Item client_secrets.json -Force
+          if (Test-Path client_secrets.json) { Remove-Item client_secrets.json -Force }
           Compress-Archive -Path package/* -DestinationPath "Database-Yedekle-Windows.zip" -Force
 
       - name: Upload ZIP package
