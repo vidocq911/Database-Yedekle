@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
   const url = Deno.env.get("SUPABASE_URL");
   const publishableKey = readKeyMap("SUPABASE_PUBLISHABLE_KEYS")?.default
     ?? Deno.env.get("SUPABASE_ANON_KEY");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const serviceKey = readKeyMap("SUPABASE_SECRET_KEYS")?.default\n    ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !publishableKey || !serviceKey) {
     return json({ error: "Sunucu yapılandırması eksik." }, 500);
   }
