@@ -1,6 +1,6 @@
 # Database Yedekle (Windows)
 
-Türkçe arayüzlü Windows masaüstü uygulaması. SQL Server ve PostgreSQL yedeklerini yerel diske, Google Drive, Dropbox, S3 uyumlu depolamaya (AWS S3/Cloudflare R2/MinIO) veya QNAP/SFTP hedefine gönderebilir.
+Türkçe arayüzlü Windows masaüstü uygulaması. Arayüz PySide6/Qt ile yeniden tasarlanmıştır; tutarlı koyu tema, modern tablolar ve SQL Server/PostgreSQL için ayrı vektör simgeleri kullanır. SQL Server ve PostgreSQL yedeklerini yerel diske, Google Drive, Dropbox, S3 uyumlu depolamaya (AWS S3/Cloudflare R2/MinIO) veya QNAP/SFTP hedefine gönderebilir.
 
 ## EXE indirme
 

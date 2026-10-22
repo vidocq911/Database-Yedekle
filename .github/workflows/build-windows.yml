@@ -69,10 +69,10 @@ jobs:
           if (-not (Test-Path vendor-tools/sqlcmd.exe)) { throw "sqlcmd.exe was not found after installation." }
 
       - name: Install dependencies
-        run: python -m pip install --upgrade pip pyinstaller pillow pyautogui pygetwindow google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko cryptography dropbox boto3
+        run: python -m pip install --upgrade pip pyinstaller pillow pyautogui pygetwindow PySide6 google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko cryptography dropbox boto3
 
       - name: Check Python syntax
-        run: python -m py_compile Database_Yedekle.py licensing_client.py license_manager.py scripts/generate_license_signing_key.py
+        run: python -m py_compile database_yedekle_qt.py Database_Yedekle.py licensing_client.py license_manager.py scripts/generate_license_signing_key.py
 
       - name: Test license verification
         run: python -m unittest discover -s tests -v
@@ -133,7 +133,7 @@ jobs:
             "1. Extract this ZIP to a folder."
             "2. Run Database Yedekle.exe."
             "3. The application opens in a fixed 940 x 620 window."
-            "4. Google Drive sign-in is available only if the build was configured with a Google OAuth Desktop client. Without that secret, the rest of the app still builds but Drive sign-in is unavailable."
+            "4. Google Drive/Dropbox targets are shown in the Qt UI; their OAuth upload adapters still need to be ported before use in this UI."
             "5. SQL command-line tools are bundled when installation succeeds; SQL Server still requires a compatible Microsoft ODBC Driver."
             "6. S3-compatible targets support AWS S3, Cloudflare R2, and MinIO."
             "7. Dropbox is enabled when DROPBOX_APP_KEY is configured for the build; users authorize once from the app."
