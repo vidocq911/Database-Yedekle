@@ -38,7 +38,7 @@ jobs:
           }
 
       - name: Install dependencies
-        run: python -m pip install --upgrade pip pyinstaller pillow google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko cryptography
+        run: python -m pip install --upgrade pip pyinstaller pillow pyautogui pygetwindow google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko cryptography
 
       - name: Check Python syntax
         run: python -m py_compile Database_Yedekle.py licensing_client.py license_manager.py scripts/generate_license_signing_key.py
@@ -70,6 +70,19 @@ jobs:
           if (Test-Path license-public-jwk.json) { $data += @("--add-data", "license-public-jwk.json;.") }
           python -m PyInstaller @common @data
 
+      - name: GUI smoke test and screenshots
+        shell: pwsh
+        run: |
+          python tests/gui_smoke_test.py
+      - name: Upload GUI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Database-Yedekle-GUI-Screenshots
+          path: gui-test-output/*.png
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Create distribution package
         shell: pwsh
         run: |
@@ -84,7 +97,7 @@ jobs:
             ""
             "1. Extract this ZIP to a folder."
             "2. Run Database Yedekle.exe."
-            "3. The application uses a compact 900 x 620 window and matching database-backup icon."
+            "3. The application opens in a 1120 x 780 window with a matching database-backup icon."
             "4. Google Drive setup is included in the app build; users should only need to sign in."
             "5. For remote QNAP, enable/configure SFTP on QNAP and enter its hostname, port, username, password, and remote directory."
             "6. This build is not code-signed, so Windows SmartScreen may still show a warning."
