@@ -100,8 +100,18 @@ jobs:
           if (Test-Path dropbox_app_key.txt) { $data += @("--add-data", "dropbox_app_key.txt;.") }
           if (Test-Path supabase_anon_key.txt) { $data += @("--add-data", "supabase_anon_key.txt;.") }
           if (Test-Path license-public-jwk.json) { $data += @("--add-data", "license-public-jwk.json;.") }
+          if (Test-Path sql-server-logo.svg) { $data += @("--add-data", "sql-server-logo.svg;.") }
+          if (Test-Path postgresql-logo.svg) { $data += @("--add-data", "postgresql-logo.svg;.") }
           $common += @("--collect-all","dropbox")
           python -m PyInstaller @common @data
+
+      - name: Fetch official database logos
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://commons.wikimedia.org/wiki/Special:Redirect/file/Microsoft_SQL_Server_2025_icon.svg" -OutFile "sql-server-logo.svg"
+          Invoke-WebRequest -Uri "https://wiki.postgresql.org/wiki/Special:Redirect/file/PostgreSQL_logo.3colors.svg" -OutFile "postgresql-logo.svg"
+          if ((Get-Item "sql-server-logo.svg").Length -lt 1000) { throw "SQL Server logo download failed." }
+          if ((Get-Item "postgresql-logo.svg").Length -lt 1000) { throw "PostgreSQL logo download failed." }
 
       - name: GUI smoke test and screenshots
         shell: pwsh
