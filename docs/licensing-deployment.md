@@ -40,7 +40,18 @@ Deploy these functions from the current branch when ready:
 - `supabase/functions/activate-license/index.ts`
 - `supabase/functions/release-license-device/index.ts`
 
-Before deploying `activate-license`, configure `LICENSE_SIGNING_PRIVATE_JWK` as a Supabase Edge Function secret containing an Ed25519 private JWK JSON object. Generate a fresh Ed25519 key pair in a trusted local environment; store only the private JWK in Supabase secrets and embed only the public key in the desktop client. Never commit either key to GitHub. The activation response is signed over a base64url-encoded JSON payload; the desktop client must verify the Ed25519 signature before trusting any payload fields. The payload sets `verify_again_after` to 168 hours and `offline_grace_until` to 336 hours after issuance. These timestamps are only effective if the desktop app enforces them and checks the device fingerprint hash.
+Before deploying `activate-license`, generate an Ed25519 key pair locally:
+```powershell
+python -m pip install cryptography
+python scripts/generate_license_signing_key.py
+```
+This writes local private/public JWK JSON files; both are excluded by `.gitignore`. In PowerShell with Supabase CLI logged in, set the private key secret (do not paste it into chat or GitHub):
+```powershell
+$privateJwk = Get-Content .\\license-signing-private.jwk.json -Raw
+supabase secrets set LICENSE_SIGNING_PRIVATE_JWK="$privateJwk" --project-ref hkuoymftockxmynrcjwh
+supabase functions deploy activate-license --project-ref hkuoymftockxmynrcjwh --no-verify-jwt
+```
+Keep the public JWK from `license-signing-public.jwk.json` for the desktop client. Never commit either key file. The activation response is signed over a base64url-encoded JSON payload; a client must verify the Ed25519 signature before trusting claims. The payload sets `verify_again_after` to 168 hours and `offline_grace_until` to 336 hours after issuance. These timestamps only work if the desktop app enforces them and checks the device fingerprint hash. `licensing_client.py` provides signature/claim verification helpers, but the existing backup GUI does not yet enforce a license gate or persist the signed response.
 
 Keep JWT verification enabled for `admin-review-demo`; the function additionally validates the user's access token and checks `public.admin_users` for an active `owner` or `admin` role. The public `demo-request` endpoint intentionally accepts unauthenticated requests. CORS is not authentication; before production, add edge rate limiting and CAPTCHA/bot protection. The `create-license` endpoint requires an authenticated active `owner` or `admin`, accepts an active customer ID, and returns a newly generated license key only once while storing only its SHA-256 hash. The `activate-license` endpoint accepts a license key and device fingerprint, hashes both server-side, and atomically binds the license to one device. A different device is rejected until an administrator releases the current device using `release-license-device`.
 
@@ -58,9 +69,9 @@ The admin-review handler calls `public.review_demo_request_atomic`, which update
 
 - Public demo requests need rate limiting and CAPTCHA/bot protection.
 - Build and test the admin UI.
-- Move approval/rejection + customer status + audit event into one transaction/RPC.
+- Review the atomic demo-review RPC and test unauthorized, non-admin, approve, reject, duplicate-review, and partial-failure cases.
 - Verify unauthorized, non-admin, approve, reject, duplicate-review, and partial-failure cases.
-- Integrate signature verification and the 168-hour online verification / 168-hour offline grace rules into the desktop client. The server endpoint now requires `LICENSE_SIGNING_PRIVATE_JWK` and returns an Ed25519-signed response, but it has not been deployed or end-to-end tested.
+- Integrate `licensing_client.py` into the GUI: prompt for a license key, activate online, securely cache the exact signed envelope, re-verify it on each launch, and enforce online recheck at 168 hours and offline cutoff at 336 hours. Do not release the feature until the public JWK is embedded and end-to-end tests pass.
 - Integrate the Windows app without embedding a service-role/secret key or private signing key.
 - Run Supabase security advisors and confirm no anonymous/authenticated grants or policies expose private customer/license/payment records.
 - Do not enable production auto-deploy until migrations and functions are reviewed and tested.
