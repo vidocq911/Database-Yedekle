@@ -63,9 +63,12 @@ def verify_activation_response(response: Mapping[str, Any], public_jwk: Mapping[
     issued = parse_time("issued_at")
     verify_again = parse_time("verify_again_after")
     grace_until = parse_time("offline_grace_until")
+    starts = parse_time("starts_at", required=False)
     expiry = parse_time("expires_at", required=False)
     if issued and issued > current.replace(microsecond=0):
         raise LicenseVerificationError("License response is from the future")
+    if starts and current < starts:
+        raise LicenseVerificationError("License is not active yet")
     if expiry and current >= expiry:
         raise LicenseVerificationError("License has expired")
     if grace_until and current >= grace_until:
