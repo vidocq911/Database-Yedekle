@@ -36,7 +36,7 @@ jobs:
           }
 
       - name: Install dependencies
-        run: python -m pip install --upgrade pip pyinstaller pillow google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko
+        run: python -m pip install --upgrade pip pyinstaller pillow google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 paramiko cryptography
 
       - name: Check Python syntax
         run: python -m py_compile Database_Yedekle.py
