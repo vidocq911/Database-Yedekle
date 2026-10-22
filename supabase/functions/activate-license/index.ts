@@ -117,14 +117,14 @@ Deno.serve(async (req) => {
       offline_grace_until: new Date(Date.now() + 336 * 60 * 60 * 1000).toISOString(),
     };
     const encodedPayload = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(payload))))
-      .replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+      .replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
     const signatureBytes = await crypto.subtle.sign(
       { name: "Ed25519" },
       signingKey,
       new TextEncoder().encode(encodedPayload),
     );
     const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)))
-      .replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+      .replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 
     return json({
       success: true,
