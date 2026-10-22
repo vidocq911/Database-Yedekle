@@ -23,8 +23,8 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Database Yedekle")
-        self.geometry("1000x700")
-        self.minsize(760, 560)
+        self.geometry("900x620")
+        self.resizable(False, False)
         self.configure(bg=BG)
         self.items, self.found = [], []
         self.dbtype = tk.StringVar(value="SQL Server")
@@ -54,30 +54,30 @@ class App(tk.Tk):
         s.configure("TFrame",background=BG)
         s.configure("TLabel",background=BG,foreground=NAVY,font=("Segoe UI",10))
         s.configure("Muted.TLabel",foreground=MUTED,font=("Segoe UI",9))
-        s.configure("Title.TLabel",font=("Segoe UI",20,"bold"),foreground=NAVY)
-        s.configure("Section.TLabel",font=("Segoe UI",11,"bold"),foreground=NAVY)
-        s.configure("TButton",font=("Segoe UI",10),padding=(10,7),background="#E6ECF4",foreground=NAVY)
+        s.configure("Title.TLabel",font=("Segoe UI",16,"bold"),foreground=NAVY)
+        s.configure("Section.TLabel",font=("Segoe UI",10,"bold"),foreground=NAVY)
+        s.configure("TButton",font=("Segoe UI",9),padding=(7,4),background="#E6ECF4",foreground=NAVY)
         s.map("TButton",background=[("active","#D7E2F0")])
-        s.configure("Primary.TButton",font=("Segoe UI",10,"bold"),padding=(12,8),background=BLUE,foreground="white")
+        s.configure("Primary.TButton",font=("Segoe UI",9,"bold"),padding=(9,5),background=BLUE,foreground="white")
         s.map("Primary.TButton",background=[("active","#1D4ED8")],foreground=[("active","white")])
-        s.configure("Treeview",rowheight=28,font=("Segoe UI",9),background="white",fieldbackground="white")
+        s.configure("Treeview",rowheight=22,font=("Segoe UI",9),background="white",fieldbackground="white")
         s.configure("Treeview.Heading",font=("Segoe UI",9,"bold"),background="#E8EEF6",foreground=NAVY,padding=7)
         s.configure("TNotebook",background=BG,borderwidth=0)
-        s.configure("TNotebook.Tab",padding=(14,9),font=("Segoe UI",10,"bold"))
+        s.configure("TNotebook.Tab",padding=(11,6),font=("Segoe UI",9,"bold"))
         s.map("TNotebook.Tab",background=[("selected","white")],foreground=[("selected",BLUE)])
 
     def _build(self):
-        shell=ttk.Frame(self,padding=16); shell.pack(fill="both",expand=True)
-        head=ttk.Frame(shell);head.pack(fill="x",pady=(0,12))
+        shell=ttk.Frame(self,padding=10); shell.pack(fill="both",expand=True)
+        head=ttk.Frame(shell);head.pack(fill="x",pady=(0,7))
         ttk.Label(head,text="Database Yedekle",style="Title.TLabel").pack(anchor="w")
         ttk.Label(head,text="Veritabanı yedeklerini planla, sıkıştır ve Google Drive'a güvenle aktar.",style="Muted.TLabel").pack(anchor="w",pady=(3,0))
         self.tabs=ttk.Notebook(shell);self.tabs.pack(fill="both",expand=True)
-        self.dbtab=ttk.Frame(self.tabs,padding=12);self.schedtab=ttk.Frame(self.tabs,padding=18);self.storagetab=ttk.Frame(self.tabs,padding=18)
+        self.dbtab=ttk.Frame(self.tabs,padding=8);self.schedtab=ttk.Frame(self.tabs,padding=10);self.storagetab=ttk.Frame(self.tabs,padding=10)
         self.tabs.add(self.dbtab,text="  Veritabanları  ")
         self.tabs.add(self.schedtab,text="  Otomatik Yedekleme  ")
         self.tabs.add(self.storagetab,text="  Yedekleme Hedefi  ")
         self._build_db();self._build_schedule();self._build_storage()
-        foot=ttk.Frame(shell);foot.pack(fill="x",pady=(12,0))
+        foot=ttk.Frame(shell);foot.pack(fill="x",pady=(7,0))
         ttk.Label(foot,textvariable=self.status,style="Muted.TLabel").pack(side="left",fill="x",expand=True)
         ttk.Button(foot,text="Google ile Bağlan",command=self.connect_google).pack(side="right",padx=(8,0))
         ttk.Button(foot,text="Şimdi Yedekle",style="Primary.TButton",command=self.start).pack(side="right")
@@ -183,14 +183,18 @@ class App(tk.Tk):
         from google.oauth2.credentials import Credentials
         from google.auth.transport.requests import Request
         token=self._config_dir()/"google_token.json"
-        secrets=(Path(sys.executable).parent if getattr(sys,"frozen",False) else Path(__file__).parent)/"client_secrets.json"
+        base=Path(sys.executable).parent if getattr(sys,"frozen",False) else Path(__file__).parent
+        secrets=base/"client_secrets.json"
+        if not secrets.exists():
+            chosen=filedialog.askopenfilename(title="Google OAuth istemci JSON dosyasını seç",filetypes=[("JSON dosyaları","*.json"),("Tüm dosyalar","*.*")],parent=self)
+            if not chosen: raise RuntimeError("Google bağlantısı için OAuth istemci JSON dosyası seçilmedi.")
+            secrets=Path(chosen)
         creds=None
         if token.exists():
             try:creds=Credentials.from_authorized_user_file(str(token),SCOPES)
             except Exception:pass
         if creds and creds.expired and creds.refresh_token:creds.refresh(Request())
         if not creds or not creds.valid:
-            if not secrets.exists():raise RuntimeError("Google OAuth dosyası eksik. client_secrets.json dosyasını EXE'nin yanına eklemek gerekiyor.")
             flow=InstalledAppFlow.from_client_secrets_file(str(secrets),SCOPES)
             creds=flow.run_local_server(port=0)
             token.write_text(creds.to_json(),encoding="utf-8")
