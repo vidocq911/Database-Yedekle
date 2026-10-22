@@ -75,6 +75,14 @@ class LicenseVerificationTests(unittest.TestCase):
                 self.response, self.public_jwk, sha256_hex("another-device"), self.now
             )
 
+    def test_license_before_start_date_is_rejected(self):
+        payload = dict(self.payload)
+        payload["starts_at"] = (self.now + timedelta(days=1)).isoformat()
+        with self.assertRaises(LicenseVerificationError):
+            verify_activation_response(
+                self.sign_payload(payload), self.public_jwk, self.fingerprint_hash, self.now
+            )
+
     def test_expired_license_is_rejected(self):
         payload = dict(self.payload)
         payload["expires_at"] = (self.now - timedelta(seconds=1)).isoformat()
