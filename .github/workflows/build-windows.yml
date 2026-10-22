@@ -40,23 +40,40 @@ jobs:
       - name: Check Python syntax
         run: python -m py_compile Database_Yedekle.py
 
+      - name: Create application icon
+        shell: pwsh
+        run: |
+          python -c "from PIL import Image,ImageDraw; im=Image.new('RGBA',(256,256),'#10284a'); d=ImageDraw.Draw(im); d.rounded_rectangle((28,28,178,210),radius=28,fill='#173e6a',outline='#55d8ff',width=12); d.ellipse((32,30,174,88),fill='#10284a',outline='#55d8ff',width=12); d.arc((32,66,174,126),0,180,fill='#55d8ff',width=10); d.arc((32,116,174,176),0,180,fill='#55d8ff',width=10); d.ellipse((135,132,238,235),fill='#2695ff',outline='#b8f2ff',width=7); d.line((157,182,179,204,218,158),fill='white',width=13); im.save('Database-Yedekle.ico',sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256))"
+          @(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">'
+            '<rect width="256" height="256" rx="42" fill="#10284a"/>'
+            '<path d="M28 58a75 29 0 0 1 150 0v112a75 29 0 0 1-150 0z" fill="#173e6a" stroke="#55d8ff" stroke-width="9"/>'
+            '<ellipse cx="103" cy="58" rx="75" ry="29" fill="#10284a" stroke="#55d8ff" stroke-width="9"/>'
+            '<path d="M28 100a75 29 0 0 0 150 0M28 142a75 29 0 0 0 150 0" fill="none" stroke="#55d8ff" stroke-width="7"/>'
+            '<circle cx="188" cy="185" r="49" fill="#2695ff" stroke="#b8f2ff" stroke-width="5"/>'
+            '<path d="m164 185 17 18 34-39" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>'
+            '</svg>'
+          ) | Set-Content -Encoding utf8 Database_Yedekle_Logo.svg
+
       - name: Build executable
-        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --add-data "client_secrets.json;." --collect-all googleapiclient --collect-all google_auth_oauthlib --collect-all google.auth --name "Database Yedekle" Database_Yedekle.py
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --icon "Database-Yedekle.ico" --add-data "client_secrets.json;." --collect-all googleapiclient --collect-all google_auth_oauthlib --collect-all google.auth --name "Database Yedekle" Database_Yedekle.py
 
       - name: Create distribution package
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path package | Out-Null
           Copy-Item "dist/Database Yedekle.exe" package/
+          Copy-Item "Database_Yedekle_Logo.svg" package/
+          Copy-Item "Database-Yedekle.ico" package/
           @(
             "Database Yedekle - Windows"
             "=========================="
             ""
             "1. Extract this ZIP to a folder."
             "2. Run Database Yedekle.exe."
-            "3. Click Google hesabını bağla and sign in to your Google account in the browser."
-            "4. The Google OAuth client configuration is bundled in the app; you do not need to find or provide a JSON file."
-            "5. For remote QNAP, enable/configure SFTP on QNAP and enter its reachable hostname, port, username, password, and remote directory."
+            "3. The application uses a compact 900 x 620 window and matching database-backup icon."
+            "4. Google Drive setup is included in the app build; users should only need to sign in."
+            "5. For remote QNAP, enable/configure SFTP on QNAP and enter its hostname, port, username, password, and remote directory."
             "6. This build is not code-signed, so Windows SmartScreen may still show a warning."
           ) | Set-Content -Encoding utf8 package/README.txt
           Remove-Item client_secrets.json -Force
