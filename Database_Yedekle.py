@@ -5,12 +5,12 @@ from datetime import datetime, timedelta
 
 APP = "Database Yedekle"
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-BG = "#F4F7FB"
-NAVY = "#12243A"
-BLUE = "#2563EB"
-MUTED = "#63758B"
-GREEN = "#13805C"
-CARD = "#FFFFFF"
+BG = "#0B1020"
+NAVY = "#E7EEFF"
+BLUE = "#8B5CF6"
+MUTED = "#91A0BC"
+GREEN = "#34D399"
+CARD = "#111A2E"
 SUPABASE_URL = "https://hkuoymftockxmynrcjwh.supabase.co"
 
 def tool(name):
