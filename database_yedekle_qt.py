@@ -42,20 +42,20 @@ class DemoDialog(QDialog):
         b=QDialogButtonBox();b.addButton("Talep gönder",QDialogButtonBox.ButtonRole.AcceptRole);b.addButton("Vazgeç",QDialogButtonBox.ButtonRole.RejectRole);b.accepted.connect(self.accept);b.rejected.connect(self.reject);l.addWidget(b)
 class App(QMainWindow):
     def __init__(self):
-        super().__init__();self.setWindowTitle(APP);self.resize(1080,740);self.setMinimumSize(940,650);self.setWindowIcon(QIcon(db_icon("app",64)))
+        super().__init__();self.setWindowTitle(APP);self.resize(1240,820);self.setMinimumSize(1080,720);self.setWindowIcon(QIcon(db_icon("app",64)))
         self.bus=Bus();self.bus.scan.connect(self.scanned);self.bus.done.connect(self.backup_result);self.items=[];self.found=[]
         self.cfgdir=Path(os.getenv("APPDATA",str(Path.home())))/"DatabaseYedekle";self.cfgdir.mkdir(parents=True,exist_ok=True);self.cfgfile=self.cfgdir/"config.json"
         try:self.cfg=json.loads(self.cfgfile.read_text(encoding="utf-8"))
         except Exception:self.cfg={}
         self.build();self.style();self.statusBar().showMessage("Hazır")
     def build(self):
-        root=QWidget();root.setObjectName("root");outer=QVBoxLayout(root);outer.setContentsMargins(22,18,22,12);outer.setSpacing(16)
+        root=QWidget();root.setObjectName("root");outer=QVBoxLayout(root);outer.setContentsMargins(26,22,26,18);outer.setSpacing(20)
         head=QHBoxLayout();logo=QLabel();logo.setPixmap(db_icon("app",54));head.addWidget(logo)
         brand=QVBoxLayout();ey=QLabel("DATABASE YEDEKLE  /  BACKUP CONTROL");ey.setObjectName("eyebrow");title=QLabel("Güvenli yedekleme merkezi");title.setObjectName("title");sub=QLabel("SQL SERVER  •  POSTGRESQL  •  CLOUD STORAGE");sub.setObjectName("muted")
         brand.addWidget(ey);brand.addWidget(title);brand.addWidget(sub);head.addLayout(brand);head.addStretch()
         support=QPushButton("Destek");support.clicked.connect(lambda:webbrowser.open("mailto:oguzhanyilmaz8@gmail.com?subject=Database%20Yedekle%20Destek"));demo=QPushButton("Demo / Müşteri Kaydı");demo.clicked.connect(self.demo)
         head.addWidget(support);head.addWidget(demo);outer.addLayout(head)
-        body=QHBoxLayout();body.setSpacing(16);side=QFrame();side.setObjectName("sidebar");side.setFixedWidth(205);sl=QVBoxLayout(side);sl.setContentsMargins(10,14,10,12)
+        body=QHBoxLayout();body.setSpacing(20);side=QFrame();side.setObjectName("sidebar");side.setFixedWidth(224);sl=QVBoxLayout(side);sl.setContentsMargins(14,18,14,16);sl.setSpacing(8)
         cap=QLabel("ÇALIŞMA ALANI");cap.setObjectName("eyebrow");sl.addWidget(cap);self.nav=[];self.stack=QStackedWidget()
         for i,t in enumerate(["Veritabanları","Otomatik yedekleme","Yedekleme hedefi"]):
             b=QPushButton(["▦","◷","⇧"][i]+"    "+t);b.setObjectName("nav");b.setCheckable(True);b.clicked.connect(lambda checked=False,j=i:self.navigate(j));sl.addWidget(b);self.nav.append(b)
@@ -74,8 +74,11 @@ class App(QMainWindow):
     def db_ui(self):
         o=QVBoxLayout(self.dbpage);o.setContentsMargins(0,0,0,0);o.setSpacing(12);top=QHBoxLayout();titles=QVBoxLayout();h=QLabel("Veritabanı bağlantıları");h.setObjectName("pageTitle");titles.addWidget(h);d=QLabel("Yedeklenecek kaynakları seç veya sunucularda otomatik arama yap.");d.setObjectName("muted");titles.addWidget(d);top.addLayout(titles);top.addStretch()
         self.kind=QComboBox();self.kind.addItems(["SQL Server","PostgreSQL"]);self.kind.currentTextChanged.connect(self.kind_changed);self.kind_icon=QLabel();self.kind_icon.setFixedSize(40,40);top.addWidget(self.kind_icon);top.addWidget(self.kind)
-        for text,fn in [("Otomatik ara",self.scan_db),("Manuel ekle",self.add_db),("Seçiliyi kaldır",self.remove_db)]:
-            b=QPushButton(text);b.clicked.connect(fn);top.addWidget(b)
+        for text,fn in [("Tara",self.scan_db),("＋  Bağlantı ekle",self.add_db),("Kaldır",self.remove_db)]:
+            b=QPushButton(text);b.clicked.connect(fn)
+            if text=="Tara": self.scan_button=b
+            if text.startswith("＋"): b.setObjectName("primary")
+            top.addWidget(b)
         o.addLayout(top);split=QSplitter(Qt.Orientation.Vertical);split.setChildrenCollapsible(False)
         c,l=self.card("Yedekleme listesi","Satıra çift tıklayarak yedeklemeye dahil etme durumunu değiştir.");self.tbl=self.table(["Dahil","Motor","Sunucu / Host","Veritabanı","Yedek adı"]);self.tbl.cellDoubleClicked.connect(self.toggle);l.addWidget(self.tbl);split.addWidget(c)
         c,l=self.card("Arama sonuçları","Bulunan veritabanlarını seçip yedekleme listesine ekle.");self.results=self.table(["Motor","Sunucu","Bulunan veritabanı"]);l.addWidget(self.results)
@@ -106,18 +109,18 @@ class App(QMainWindow):
         w=QWidget();l=QVBoxLayout(w);h=QLabel(title);h.setObjectName("section");d=QLabel(desc);d.setObjectName("muted");d.setWordWrap(True);l.addWidget(h);l.addWidget(d);l.addStretch();return w
     def style(self):
         self.setStyleSheet("""
-        *{font-family:'Segoe UI';font-size:10pt} QMainWindow,QWidget#root{background:#0B1020;color:#E8F0FF}
-        QFrame#sidebar{background:#0F172A;border:1px solid #202D45;border-radius:14px} QFrame#card{background:#111A2E;border:1px solid #263650;border-radius:13px}
-        QLabel{color:#E8F0FF;background:transparent} QLabel#title{font-size:21pt;font-weight:700} QLabel#pageTitle{font-size:17pt;font-weight:700} QLabel#section{font-size:11pt;font-weight:700}
+        *{font-family:'Segoe UI';font-size:10pt} QMainWindow,QWidget#root{background:#080D19;color:#EDF3FF}
+        QFrame#sidebar{background:#0E1628;border:1px solid #1D2A42;border-radius:18px} QFrame#card{background:#101A2D;border:1px solid #263752;border-radius:16px}
+        QLabel{color:#E8F0FF;background:transparent} QLabel#title{font-size:23pt;font-weight:750} QLabel#pageTitle{font-size:20pt;font-weight:750;padding:2px 0 4px 0} QLabel#section{font-size:12pt;font-weight:700}
         QLabel#eyebrow{color:#22D3EE;font-size:8pt;font-weight:700;letter-spacing:1px} QLabel#muted{color:#91A4C5;font-size:9pt}
-        QPushButton{color:#E8F0FF;background:#202D45;border:1px solid #2B3B59;border-radius:8px;padding:10px 13px;font-weight:600} QPushButton:hover{background:#2B3D5D;border-color:#3B5278}
-        QPushButton#primary{background:#7C3AED;color:white;border-color:#8B5CF6} QPushButton#primary:hover{background:#8B5CF6}
+        QPushButton{color:#E8F0FF;background:#19263D;border:1px solid #2A3B58;border-radius:10px;padding:11px 16px;font-weight:650} QPushButton:hover{background:#263954;border-color:#456184} QPushButton:pressed{background:#101A2D}
+        QPushButton#primary{background:#6D45E8;color:white;border:1px solid #8B73FF;border-radius:10px;padding:11px 17px} QPushButton#primary:hover{background:#805FF0}
         QPushButton#nav{text-align:left;background:transparent;border:0;padding:12px 10px;color:#A6B7D4} QPushButton#nav:hover{background:#17233A} QPushButton#nav:checked{background:#1A2C43;color:#22D3EE;border-left:3px solid #22D3EE}
-        QLineEdit,QComboBox{background:#0D172A;color:#E8F0FF;border:1px solid #2B3B59;border-radius:7px;padding:9px 10px;selection-background-color:#5B21B6}
+        QLineEdit,QComboBox{background:#0B1425;color:#EDF3FF;border:1px solid #2B3D5A;border-radius:9px;padding:11px 12px;selection-background-color:#5B21B6;min-height:20px}
         QLineEdit:focus,QComboBox:focus{border:1px solid #22D3EE} QComboBox QAbstractItemView{background:#111A2E;color:#E8F0FF;selection-background-color:#3730A3}
         QCheckBox{spacing:9px;color:#D9E5FA;padding:5px 0} QCheckBox::indicator{width:17px;height:17px} QCheckBox::indicator:unchecked{background:#0D172A;border:1px solid #4A5D7B;border-radius:4px} QCheckBox::indicator:checked{background:#7C3AED;border:1px solid #A78BFA;border-radius:4px}
-        QTableWidget{background:#0D172A;alternate-background-color:#101C31;color:#DCE7FF;border:1px solid #263650;border-radius:8px;gridline-color:transparent;selection-background-color:#273B60;selection-color:white;outline:0}
-        QTableWidget::item{padding:8px 7px;border-bottom:1px solid #1D2A41} QHeaderView::section{background:#1A2942;color:#BFD0EC;border:0;border-bottom:1px solid #314463;padding:11px 8px;font-weight:700}
+        QTableWidget{background:#0B1425;alternate-background-color:#101C30;color:#E2EBFC;border:1px solid #263752;border-radius:11px;gridline-color:transparent;selection-background-color:#293D62;selection-color:white;outline:0}
+        QTableWidget::item{padding:11px 9px;border-bottom:1px solid #1A2940} QHeaderView::section{background:#17253D;color:#C9D8F0;border:0;border-bottom:1px solid #2C405F;padding:13px 10px;font-weight:700}
         QScrollBar:vertical{background:#0D172A;width:10px;margin:4px 2px;border-radius:5px} QScrollBar::handle:vertical{background:#344765;min-height:24px;border-radius:5px} QScrollBar::handle:vertical:hover{background:#52698F} QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical{height:0}
         QScrollBar:horizontal{background:#0D172A;height:10px;margin:2px 4px;border-radius:5px} QScrollBar::handle:horizontal{background:#344765;min-width:24px;border-radius:5px} QScrollBar::add-line:horizontal,QScrollBar::sub-line:horizontal{width:0}
         QSplitter::handle{background:#263650;height:5px} QStatusBar{background:#0F172A;color:#91A4C5;border-top:1px solid #263650} QDialog{background:#111A2E}
