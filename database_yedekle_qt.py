@@ -2,7 +2,7 @@ import os,sys,json,shutil,subprocess,threading,webbrowser,urllib.request,urllib.
 from pathlib import Path
 from datetime import datetime
 from PySide6.QtCore import Qt,Signal,QObject
-from PySide6.QtGui import QColor,QPainter,QPen,QIcon,QPixmap
+from PySide6.QtGui import QColor,QPainter,QPen,QIcon,QPixmap,QFont
 from PySide6.QtWidgets import *
 APP="Database Yedekle"; BG="#0B1020"; PANEL="#111A2E"; PANEL2="#17233A"; LINE="#263650"; FG="#E8F0FF"; MUTED="#91A4C5"; CYAN="#22D3EE"; PURPLE="#8B5CF6"
 SUPABASE="https://hkuoymftockxmynrcjwh.supabase.co"
@@ -16,7 +16,11 @@ def cli(name):
     return str(p) if p.exists() else shutil.which(name)
 def db_icon(kind,size=40):
     pix=QPixmap(size,size); pix.fill(Qt.GlobalColor.transparent); p=QPainter(pix); p.setRenderHint(QPainter.RenderHint.Antialiasing)
-    if kind=="SQL Server":
+    if kind=="app":
+        p.setPen(QPen(QColor("#5575A8"),1.4));p.setBrush(QColor("#233B5B"));p.drawRoundedRect(size*.10,size*.13,size*.80,size*.72,size*.13,size*.13)
+        p.setPen(QPen(QColor("#7B9CCB"),1.2));p.setBrush(QColor("#3E5D89"));p.drawEllipse(size*.24,size*.20,size*.52,size*.18);p.drawArc(size*.24,size*.23,size*.52,size*.22,180*16,180*16);p.drawArc(size*.24,size*.37,size*.52,size*.22,180*16,180*16);p.drawArc(size*.24,size*.51,size*.52,size*.22,180*16,180*16)
+        p.setPen(Qt.PenStyle.NoPen);p.setBrush(QColor("#6F8ED0"));p.drawEllipse(size*.67,size*.65,size*.20,size*.20)
+    elif kind=="SQL Server":
         p.setPen(QPen(QColor("#FFB4AE"),1.4));p.setBrush(QColor("#E7483D"));p.drawRoundedRect(5,8,size-10,size-16,5,5);p.drawEllipse(5,4,size-10,11);p.setBrush(Qt.BrushStyle.NoBrush);p.drawArc(5,size-15,size-10,11,0,180*16);p.drawArc(5,13,size-10,11,0,180*16)
     elif kind=="PostgreSQL":
         p.setPen(QPen(QColor("#B7DFFF"),1.7));p.setBrush(QColor("#336791"));p.drawEllipse(8,5,size-17,size-12);p.drawEllipse(3,13,13,12);p.drawEllipse(size-17,8,13,13);p.setBrush(Qt.BrushStyle.NoBrush);p.drawArc(size-23,15,16,17,230*16,190*16);p.setPen(QPen(QColor("#EAF7FF"),1.4));p.drawPoint(size-12,13)
@@ -37,9 +41,36 @@ class DemoDialog(QDialog):
     def __init__(self,parent=None):
         super().__init__(parent);self.setWindowTitle("Demo erişimi ve müşteri kaydı");self.setMinimumWidth(430);l=QVBoxLayout(self)
         h=QLabel("Demo talebi oluştur");h.setObjectName("pageTitle");l.addWidget(h);n=QLabel("Bilgilerini gönder; demo süresi onaydan sonra başlar.");n.setObjectName("muted");l.addWidget(n)
-        f=QFormLayout();self.company=QLineEdit();self.person=QLineEdit();self.phone=QLineEdit();self.email=QLineEdit()
+        f=QFormLayout();self.company=QLineEdit();self.person=QLineEdit();self.phone=QLineEdit();self.email=QLineEdit();self.email.setPlaceholderText("ad@firma.com");self.phone.setPlaceholderText("+90 5xx xxx xx xx")
         f.addRow("Firma adı",self.company);f.addRow("Yetkili kişi",self.person);f.addRow("Telefon",self.phone);f.addRow("E-posta",self.email);l.addLayout(f)
-        b=QDialogButtonBox();b.addButton("Talep gönder",QDialogButtonBox.ButtonRole.AcceptRole);b.addButton("Vazgeç",QDialogButtonBox.ButtonRole.RejectRole);b.accepted.connect(self.accept);b.rejected.connect(self.reject);l.addWidget(b)
+        b=QDialogButtonBox();b.addButton("Talep gönder",QDialogButtonBox.ButtonRole.AcceptRole);b.addButton("Vazgeç",QDialogButtonBox.ButtonRole.RejectRole);b.accepted.connect(self.validate);b.rejected.connect(self.reject);l.addWidget(b)
+    def validate(self):
+        fields=[("Firma adı",self.company),("Yetkili kişi",self.person),("Telefon",self.phone),("E-posta",self.email)]
+        missing=[name for name,w in fields if not w.text().strip()]
+        if missing:QMessageBox.warning(self,"Eksik bilgi","Lütfen şu alanları doldur: "+", ".join(missing));return
+        if "@" not in self.email.text() or "." not in self.email.text().split("@")[-1]:QMessageBox.warning(self,"E-posta hatalı","Geçerli bir e-posta adresi gir.");return
+        self.accept()
+class LicenseDialog(QDialog):
+    def __init__(self,parent=None,active=None,error=None):
+        super().__init__(parent);self.setWindowTitle("Database Yedekle · Lisans");self.setFixedWidth(470);self.key=QLineEdit();self.key.setPlaceholderText("Lisans anahtarını buraya yapıştır");self.key.setMinimumHeight(42)
+        self.key.setEchoMode(QLineEdit.EchoMode.Password);root=QVBoxLayout(self);root.setContentsMargins(26,24,26,24);root.setSpacing(14)
+        mark=QLabel("LİSANS MERKEZİ");mark.setObjectName("eyebrow");root.addWidget(mark)
+        title=QLabel("Ürününüzü etkinleştirin");title.setObjectName("pageTitle");root.addWidget(title)
+        desc=QLabel("Lisans anahtarınızı girerek bu cihazda doğrulayın.");desc.setObjectName("muted");desc.setWordWrap(True);root.addWidget(desc)
+        card=QFrame();card.setObjectName("card");cl=QVBoxLayout(card);cl.setContentsMargins(16,16,16,16);cl.setSpacing(10)
+        if active:
+            st=QLabel("Bu cihazda lisans etkin");st.setObjectName("section");cl.addWidget(st);d=QLabel("Bitiş: "+str(active.get("expires_at") or "Süresiz"));d.setObjectName("muted");cl.addWidget(d)
+        else:
+            st=QLabel("Lisans anahtarı");st.setObjectName("section");cl.addWidget(st);cl.addWidget(self.key)
+        if error:
+            e=QLabel(error);e.setObjectName("muted");e.setWordWrap(True);cl.addWidget(e)
+        root.addWidget(card)
+        buttons=QHBoxLayout();buttons.addStretch();cancel=QPushButton("Kapat");cancel.clicked.connect(self.reject);buttons.addWidget(cancel)
+        if not active:
+            self.activate_button=QPushButton("Lisansı etkinleştir");self.activate_button.setObjectName("primary");self.activate_button.clicked.connect(self.accept);buttons.addWidget(self.activate_button)
+        else:
+            self.activate_button=None
+        root.addLayout(buttons)
 class App(QMainWindow):
     def __init__(self):
         super().__init__();self.setWindowTitle(APP);self.setFixedSize(1024,768);self.setWindowIcon(QIcon(db_icon("app",64)))
@@ -121,11 +152,11 @@ class App(QMainWindow):
     def style(self):
         self.setStyleSheet("""
         *{font-family:'Segoe UI';font-size:10pt} QMainWindow,QWidget#root{background:#080D19;color:#EDF3FF}
-        QFrame#sidebar{background:#0E1628;border:1px solid #1D2A42;border-radius:18px} QFrame#card{background:#101A2D;border:1px solid #263752;border-radius:16px}
+        QFrame#sidebar{background:#0E1628;border:1px solid #1D2A42;border-radius:18px} QFrame#card{background:#101A2D;border:1px solid #263752;border-radius:14px}
         QLabel{color:#E8F0FF;background:transparent} QLabel#title{font-size:23pt;font-weight:750} QLabel#pageTitle{font-size:20pt;font-weight:750;padding:2px 0 4px 0} QLabel#section{font-size:12pt;font-weight:700}
-        QLabel#eyebrow{color:#5AB8C5;font-size:8pt;font-weight:700;letter-spacing:1px} QLabel#muted{color:#91A4C5;font-size:9pt}
+        QLabel#eyebrow{color:#72AEB8;font-size:8pt;font-weight:700;letter-spacing:1px} QLabel#muted{color:#91A4C5;font-size:9pt}
         QPushButton{color:#E8F0FF;background:#19263D;border:1px solid #2A3B58;border-radius:9px;padding:9px 11px;font-weight:650} QPushButton:hover{background:#263954;border-color:#456184} QPushButton:pressed{background:#101A2D}
-        QPushButton#primary{background:#4B5FA8;color:white;border:1px solid #667ABF;border-radius:9px;padding:10px 14px} QPushButton#primary:hover{background:#596EBA}
+        QPushButton#primary{background:#4B5FA8;color:white;border:1px solid #667ABF;border-radius:9px;padding:10px 14px} QPushButton#primary:hover{background:#596EBA} QDialog{background:#0B1220} QDialogButtonBox QPushButton{min-width:84px}
         QPushButton#nav{text-align:left;background:transparent;border:0;padding:12px 10px;color:#A6B7D4} QPushButton#nav:hover{background:#17233A} QPushButton#nav:checked{background:#1A2C43;color:#77C7D0;border-left:3px solid #5AB8C5}
         QLineEdit,QComboBox{background:#0B1425;color:#EDF3FF;border:1px solid #2B3D5A;border-radius:8px;padding:8px 10px;selection-background-color:#5B21B6;min-height:18px}
         QLineEdit:focus,QComboBox:focus{border:1px solid #5AB8C5} QComboBox QAbstractItemView{background:#111A2E;color:#E8F0FF;selection-background-color:#3730A3}
