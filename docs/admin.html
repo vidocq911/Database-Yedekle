@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yönetici Paneli · Database Yedekle</title>
+<meta name="robots" content="noindex,nofollow">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:dark;--bg:#07111f;--panel:#101e31;--panel2:#14243a;--line:#263a53;--text:#eef5ff;--muted:#94a8c2;--blue:#48a2ff;--green:#40d6a0;--amber:#ffc66d;--red:#ff7887}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 70% -10%,#163c66 0,transparent 45%),var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid #355171;background:#1b3858;color:var(--text);border-radius:10px;padding:9px 13px;font-weight:650}button:hover{filter:brightness(1.12)}button.primary{background:linear-gradient(135deg,#278cff,#1764d5);border-color:#398fff}button.danger{background:#512536;border-color:#8d4054}button.ghost{background:transparent}.hidden{display:none!important}.muted{color:var(--muted)}.tiny{font-size:12px}.wrap{max-width:1440px;margin:auto;padding:24px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}.brand{display:flex;align-items:center;gap:12px}.logo{height:44px;width:44px;border-radius:14px;background:linear-gradient(135deg,#2f9cff,#174fba);display:grid;place-items:center;font-size:23px;box-shadow:0 8px 24px #007aff25}.brand h1{font-size:18px;margin:0}.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}.userbar{display:flex;align-items:center;gap:10px}.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px}.sidebar,.panel,.stat,.login{background:#101e31ed;border:1px solid var(--line);border-radius:17px}.sidebar{padding:12px;height:max-content;position:sticky;top:20px}.nav{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:transparent;border-color:transparent;color:#b9c9dd;margin:3px 0;padding:11px}.nav.active{background:#1b3a5c;border-color:#2c5884;color:white}.nav span{width:22px;text-align:center}.sidefoot{border-top:1px solid var(--line);margin-top:14px;padding:14px 9px 4px;color:var(--muted);font-size:12px}.main{min-width:0}.pagehead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:4px 0 18px}.pagehead h2{font-size:24px;letter-spacing:-.03em;margin:0}.pagehead p{color:var(--muted);margin:5px 0 0}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:18px}.stat{padding:17px}.stat .label{color:var(--muted);font-size:12px}.stat .value{font-size:28px;font-weight:750;letter-spacing:-.04em;margin-top:7px}.stat .hint{font-size:12px;color:var(--muted);margin-top:4px}.panel{padding:18px;margin-bottom:16px}.toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:13px}.search{min-width:240px;flex:1;max-width:440px}.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}.field label{font-size:12px;color:#b5c7dc;font-weight:650}.field input,.field select,.field textarea,.search{background:#091625;border:1px solid #304760;color:var(--text);border-radius:9px;padding:10px 11px;outline:none;min-width:0}.field input:focus,.search:focus{border-color:var(--blue);box-shadow:0 0 0 3px #268cff22}.row{display:flex;gap:12px}.row>*{flex:1;min-width:0}.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;white-space:nowrap}th,td{padding:12px 13px;text-align:left;border-bottom:1px solid #20334b}th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#94a9c4;background:#0b1929}td{font-size:13px}tr:last-child td{border-bottom:0}tbody tr:hover{background:#14243a}.badge{display:inline-flex;padding:4px 8px;border-radius:99px;font-size:11px;font-weight:750;background:#23354c;color:#c5d4e7}.badge.good{background:#123e37;color:#70e7bf}.badge.warn{background:#48391f;color:#ffd58b}.badge.bad{background:#4b2532;color:#ff9eab}.actions{display:flex;gap:7px}.actions button{font-size:12px;padding:6px 9px}.empty{text-align:center;padding:36px;color:var(--muted)}.notice{padding:12px 14px;border:1px solid #315273;background:#102741;border-radius:11px;color:#c7def6;margin-bottom:14px}.error{border-color:#78404b;background:#351d29;color:#ffc3ca}.success{border-color:#226d59;background:#11352e;color:#a9f3d7}.login{max-width:520px;margin:7vh auto;padding:28px}.login h2{font-size:25px;margin:0 0 5px}.login .desc{color:var(--muted);margin:0 0 22px}.login .field{margin-bottom:14px}.login .field input{width:100%}.login button{width:100%;margin-top:7px}.split{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.sectiontitle{font-weight:750;font-size:15px;margin-bottom:12px}.pillrow{display:flex;gap:8px;flex-wrap:wrap}.footnote{color:#7f94ad;font-size:11px;margin-top:14px}.toast{position:fixed;bottom:20px;right:20px;max-width:min(420px,calc(100vw - 40px));padding:13px 16px;background:#163b5d;border:1px solid #3974a8;border-radius:12px;box-shadow:0 15px 45px #0006;z-index:20}.toast.error{background:#3b2029;border-color:#8b4653}.modalback{position:fixed;inset:0;background:#020812bd;display:grid;place-items:center;padding:20px;z-index:10}.modal{width:min(520px,100%);background:#101e31;border:1px solid #355171;border-radius:18px;padding:22px;max-height:90vh;overflow:auto}.modalhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.modalhead h3{margin:0;font-size:19px}.modalclose{padding:4px 9px}.keybox{word-break:break-all;font:700 18px ui-monospace,monospace;background:#071525;padding:14px;border:1px dashed #4d78a4;border-radius:10px}.spinner{display:inline-block;width:14px;height:14px;border:2px solid #ffffff55;border-top-color:white;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:950px){.layout{grid-template-columns:1fr}.sidebar{position:static;display:flex;overflow:auto;gap:3px}.nav{white-space:nowrap;width:auto;flex-shrink:0}.sidefoot{display:none}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:1fr}}@media(max-width:600px){.wrap{padding:14px}.top{align-items:flex-start}.userbar{flex-direction:column;align-items:flex-end}.pagehead h2{font-size:21px}.stats{gap:8px}.stat{padding:13px}.stat .value{font-size:24px}.row{flex-direction:column;gap:0}.sidebar{padding:7px}.nav{padding:9px}.brand p{display:none}}
+</style>
+</head>
+<body>
+<div id="loginView" class="wrap">
+  <div class="brand" style="justify-content:center;margin:25px 0 20px"><div class="logo">▤</div><div><h1>Database Yedekle</h1><p>Güvenli yönetim merkezi</p></div></div>
+  <div class="login">
+    <h2>Yönetici girişi</h2><p class="desc">Müşterileri, deneme taleplerini ve lisansları yönetmek için hesabınla giriş yap.</p>
+    <div id="loginNotice" class="notice hidden"></div>
+    <div class="field"><label for="email">Yönetici e-postası</label><input id="email" type="email" autocomplete="username" placeholder="yonetici@firma.com"></div>
+    <div class="field"><label for="password">Şifre</label><input id="password" type="password" autocomplete="current-password" placeholder="Supabase Auth şifren"></div>
+    <details style="margin:14px 0"><summary class="muted" style="cursor:pointer">Bağlantı ayarları</summary>
+      <p class="tiny muted">Yalnızca herkese açık proje URL'si ve publishable/anon anahtarı kullanılır. Secret/service-role anahtarı buraya girilmemelidir.</p>
+      <div class="field"><label for="projectUrl">Supabase proje URL'si</label><input id="projectUrl" value="https://hkuoymftockxmynrcjwh.supabase.co" spellcheck="false"></div>
+      <div class="field"><label for="publicKey">Publishable / anon key</label><input id="publicKey" autocomplete="off" placeholder="sb_publishable_… veya eski anon JWT"></div>
+    </details>
+    <button id="loginBtn" class="primary">Giriş yap</button>
+    <p class="footnote">Erişim yalnızca sunucudaki aktif owner/admin listesinde bulunan hesaplara verilir. Parolanı kaydetmiyoruz.</p>
+  </div>
+</div>
+<div id="appView" class="wrap hidden">
+  <header class="top">
+    <div class="brand"><div class="logo">▤</div><div><h1>Database Yedekle</h1><p>Yönetim merkezi <span id="roleTag"></span></p></div></div>
+    <div class="userbar"><span id="whoami" class="muted tiny"></span><button id="refreshBtn" class="ghost">↻ Yenile</button><button id="logoutBtn" class="ghost">Çıkış</button></div>
+  </header>
+  <div id="globalNotice" class="notice hidden"></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <button class="nav active" data-page="overview"><span>◫</span> Genel bakış</button>
+      <button class="nav" data-page="customers"><span>♙</span> Müşteriler</button>
+      <button class="nav" data-page="demos"><span>✓</span> Demo başvuruları <b id="demoCount" class="badge warn">0</b></button>
+      <button class="nav" data-page="licenses"><span>⚿</span> Lisanslar</button>
+      <button class="nav" data-page="devices"><span>▣</span> Cihazlar</button>
+      <button class="nav" data-page="sales"><span>₺</span> Satış & tahsilat</button>
+      <div class="sidefoot">Veriler sadece yetkili Edge Function üzerinden okunur. Tarayıcıya yönetici sırrı gönderilmez.</div>
+    </aside>
+    <main id="main" class="main"><div class="empty"><span class="spinner"></span> Panel yükleniyor…</div></main>
+  </div>
+</div>
+<div id="modalRoot"></div><div id="toastRoot"></div>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const state = { client:null, data:null, page:"overview", query:"", busy:false, key:"" };
+  const projectDefault = "https://hkuoymftockxmynrcjwh.supabase.co";
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const date = (v) => v ? new Date(v).toLocaleDateString("tr-TR") : "—";
+  const money = (v,c="TRY") => new Intl.NumberFormat("tr-TR",{style:"currency",currency:c,maximumFractionDigits:2}).format(Number(v||0));
+  const badge = (s) => {const k=String(s||"—").toLowerCase();let cls=["active","approved","issued","paid"].includes(k)?"good":["pending","partial","trial"].includes(k)?"warn":["rejected","revoked","suspended","expired","overdue","blocked"].includes(k)?"bad":"";return '<span class="badge '+cls+'">'+esc(s||"—")+'</span>'};
+  const showNotice = (msg, kind="") => {const n=$("globalNotice");n.className="notice "+kind;n.textContent=msg;n.classList.remove("hidden")};
+  const toast = (msg, bad=false) => {const root=$("toastRoot");root.innerHTML='<div class="toast '+(bad?"error":"")+'">'+esc(msg)+'</div>';setTimeout(()=>root.innerHTML="",5000)};
+  const supabase = () => state.client;
+  const invoke = async (name, body=null) => {const {data,error}=await supabase().functions.invoke(name, body===null?{}:{body});if(error)throw new Error((data&&data.error)||error.message||"İstek başarısız");if(data&&data.error)throw new Error(data.error);return data};
+  const loginNotice = (msg,bad=true) => {const n=$("loginNotice");n.textContent=msg;n.className="notice "+(bad?"error":"success")};
+  const setBusy = (yes) => {state.busy=yes;$("loginBtn").disabled=yes;$("loginBtn").innerHTML=yes?'<span class="spinner"></span> Bağlanıyor…':'Giriş yap'};
+  async function login(){
+    const url=$("projectUrl").value.trim().replace(/\/$/,"")||projectDefault, key=$("publicKey").value.trim();
+    if(!/^https:\/\//.test(url)||!key){loginNotice("Supabase URL'si ve publishable/anon anahtarı gerekli.");return}
+    if(!window.supabase?.createClient){loginNotice("Supabase istemcisi yüklenemedi. İnternet bağlantısını kontrol et.");return}
+    setBusy(true);
+    try{
+      state.client=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+      const {data,error}=await state.client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+      if(error)throw error;
+      const profile=await invoke("admin-dashboard");
+      state.data=profile;state.key=key;
+      $("whoami").textContent=profile.user.email||$("email").value;
+      $("roleTag").textContent="· "+profile.user.role;
+      $("loginView").classList.add("hidden");$("appView").classList.remove("hidden");
+      render();
+    }catch(e){state.client=null;loginNotice(e.message||"Giriş başarısız.");}
+    finally{setBusy(false)}
+  }
+  async function refresh(){
+    if(!supabase())return;
+    try{state.data=await invoke("admin-dashboard");render();toast("Veriler yenilendi.");}
+    catch(e){showNotice(e.message||"Panel yenilenemedi.","error")}
+  }
+  function logout(){if(supabase())supabase().auth.signOut();state.client=null;state.data=null;$("appView").classList.add("hidden");$("loginView").classList.remove("hidden");$("password").value=""}
+  function customerName(c){return c?((c.company_name||"Firma")+" · "+(c.customer_number||"")):"Bilinmeyen müşteri"}
+  function pageHead(title,desc,button=""){return '<div class="pagehead"><div><h2>'+title+'</h2><p>'+desc+'</p></div>'+button+'</div>'}
+  function stats(){const s=state.data?.summary||{};return '<div class="stats"><div class="stat"><div class="label">Toplam müşteri</div><div class="value">'+(s.customers||0)+'</div><div class="hint">Kayıtlı müşteri</div></div><div class="stat"><div class="label">Aktif müşteriler</div><div class="value">'+(s.active_customers||0)+'</div><div class="hint">Kullanıma açık hesaplar</div></div><div class="stat"><div class="label">Bekleyen demolar</div><div class="value">'+(s.pending_demos||0)+'</div><div class="hint">İnceleme gerekiyor</div></div><div class="stat"><div class="label">Aktif lisanslar</div><div class="value">'+(s.active_licenses||0)+'</div><div class="hint">Verilmiş veya etkin</div></div></div>'}
+  function table(headers,rows,empty="Kayıt bulunamadı"){return '<div class="tablewrap"><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join("")+'</tr></thead><tbody>'+(rows.length?rows.join(""):'<tr><td colspan="'+headers.length+'" class="empty">'+empty+'</td></tr>')+'</tbody></table></div>'}
+  function searchBar(placeholder="Ara…"){return '<div class="toolbar"><input class="search" id="tableSearch" placeholder="'+placeholder+'" value="'+esc(state.query)+'"><span class="muted tiny">'+(state.data?.customers?.length||0)+' müşteri</span></div>'}
+  function render(){
+    if(!state.data)return;
+    $("demoCount").textContent=state.data.summary.pending_demos||0;
+    document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("active",b.dataset.page===state.page));
+    const d=state.data, q=state.query.toLocaleLowerCase("tr-TR");
+    let html="";
+    if(state.page==="overview"){
+      const pending=d.demo_requests.filter(x=>x.status==="pending");
+      html=pageHead("Genel bakış","Müşteri, deneme ve lisans durumunun özeti.")+stats()+
+        '<div class="split"><section class="panel"><div class="sectiontitle">İşlem bekleyen demo talepleri</div>'+
+        table(["Müşteri","Başvuru","İşlem"],pending.slice(0,8).map(x=>'<tr><td><b>'+esc(x.customer?.company_name||"—")+'</b><div class="muted tiny">'+esc(x.customer?.customer_number||"")+'</div></td><td>'+date(x.requested_at)+'</td><td><div class="actions"><button class="primary" data-action="approve" data-id="'+x.id+'">Onayla</button><button class="danger" data-action="reject" data-id="'+x.id+'">Reddet</button></div></td></tr>'),"Bekleyen demo talebi yok")+
+        '<p class="footnote">Demo onayı sunucu tarafında 7 günlük denemeyi başlatır.</p></section><section class="panel"><div class="sectiontitle">Hızlı işlemler</div><div class="pillrow"><button class="primary" data-action="goto" data-page="demos">Demo taleplerini incele</button><button data-action="goto" data-page="customers">Müşterileri aç</button><button data-action="goto" data-page="licenses">Lisansları yönet</button></div><p class="muted">Lisans anahtarı oluşturmak için müşterinin durumunun aktif olması gerekir. Anahtar yalnızca oluşturulduğu anda gösterilir.</p></section></div>'+
+        '<section class="panel"><div class="sectiontitle">Son müşteriler</div>'+table(["Müşteri no","Firma","Yetkili","Telefon","Durum","Kayıt"],d.customers.slice(0,8).map(c=>'<tr><td><b>'+esc(c.customer_number)+'</b></td><td>'+esc(c.company_name)+'</td><td>'+esc(c.contact_person)+'</td><td>'+esc(c.phone)+'</td><td>'+badge(c.status)+'</td><td>'+date(c.created_at)+'</td></tr>'),"Henüz müşteri yok")+'</section>';
+    } else if(state.page==="customers"){
+      const cs=d.customers.filter(c=>[c.customer_number,c.company_name,c.contact_person,c.phone,c.email,c.status].join(" ").toLocaleLowerCase("tr-TR").includes(q));
+      html=pageHead("Müşteriler","Müşteri kayıtları ve bağlı demo, lisans, satış bilgileri.")+ '<section class="panel">'+searchBar("Müşteri no, firma, yetkili, telefon veya e-posta ara…")+
+      table(["Müşteri no","Firma / Yetkili","İletişim","Durum","Demo","Lisans","Kayıt","İşlem"],cs.map(c=>'<tr><td><b>'+esc(c.customer_number)+'</b></td><td><b>'+esc(c.company_name)+'</b><div class="muted tiny">'+esc(c.contact_person)+'</div></td><td>'+esc(c.phone)+'<div class="muted tiny">'+esc(c.email)+'</div></td><td>'+badge(c.status)+'</td><td>'+c.demo_requests.length+'</td><td>'+c.licenses.length+'</td><td>'+date(c.created_at)+'</td><td><button data-action="customer-status" data-id="'+c.id+'" data-status="'+(c.status==="blocked"?"active":"blocked")+'">'+(c.status==="blocked"?"Aktifleştir":"Engelle")+'</button></td></tr>'))+'</section>';
+    } else if(state.page==="demos"){
+      const ds=d.demo_requests.filter(x=>[x.customer?.company_name,x.customer?.customer_number,x.customer?.phone,x.status].join(" ").toLocaleLowerCase("tr-TR").includes(q));
+      html=pageHead("Demo başvuruları","Başvuruyu kontrol et; onaylandığında sunucu 7 günlük denemeyi başlatır.")+
+      '<section class="panel">'+searchBar("Firma, müşteri no, telefon veya durum ara…")+
+      table(["Müşteri","Talep tarihi","Durum","Mükerrer kontrol","Deneme dönemi","İşlem"],ds.map(x=>'<tr><td><b>'+esc(x.customer?.company_name||"—")+'</b><div class="muted tiny">'+esc(x.customer?.customer_number||"")+' · '+esc(x.customer?.phone||"")+'</div></td><td>'+date(x.requested_at)+'</td><td>'+badge(x.status)+'</td><td>'+(x.duplicate_review_required?badge("İncele","warn"):"—")+'</td><td>'+date(x.trial_starts_at)+' – '+date(x.trial_ends_at)+'</td><td>'+(x.status==="pending"?'<div class="actions"><button class="primary" data-action="approve" data-id="'+x.id+'">Onayla</button><button class="danger" data-action="reject" data-id="'+x.id+'">Reddet</button></div>':esc(x.review_note||"—"))+'</td></tr>'))+'</section>';
+    } else if(state.page==="licenses"){
+      const ls=d.licenses.filter(x=>[x.customer?.company_name,x.customer?.customer_number,x.status,x.notes].join(" ").toLocaleLowerCase("tr-TR").includes(q));
+      html=pageHead("Lisans yönetimi","Lisans üret, bitiş tarihini görüntüle ve lisans durumunu takip et.",'<button class="primary" data-action="new-license">＋ Lisans oluştur</button>')+
+      '<section class="panel">'+searchBar("Firma, müşteri no veya lisans durumu ara…")+
+      table(["Müşteri","Durum","Oluşturma","Başlangıç","Bitiş","Cihaz","Not","İşlem"],ls.map(x=>'<tr><td><b>'+esc(x.customer?.company_name||"—")+'</b><div class="muted tiny">'+esc(x.customer?.customer_number||"")+'</div></td><td>'+badge(x.status)+'</td><td>'+date(x.issued_at)+'</td><td>'+date(x.starts_at)+'</td><td>'+date(x.expires_at)+'</td><td>'+x.devices.filter(y=>!y.released_at).length+' / '+x.max_devices+'</td><td>'+esc(x.notes||"—")+'</td><td><div class="actions">'+(x.status==="revoked"?"":'<button data-action="license-status" data-id="'+x.id+'" data-status="'+(x.status==="suspended"?"active":"suspended")+'">'+(x.status==="suspended"?"Etkinleştir":"Askıya al")+'</button><button class="danger" data-action="license-status" data-id="'+x.id+'" data-status="revoked">İptal</button>')+'</div></td></tr>'))+'</section>';
+    } else if(state.page==="devices"){
+      const dev=d.devices.filter(x=>[x.device_label,x.license?.status,x.license?.id,x.id].join(" ").toLocaleLowerCase("tr-TR").includes(q));
+      html=pageHead("Cihazlar","Lisansın bağlı olduğu cihazları gör. Cihazı serbest bırakmak mevcut aktivasyonu etkiler.")+
+      '<section class="panel">'+searchBar("Cihaz adı, cihaz ID veya lisans durumu ara…")+
+      table(["Cihaz","Lisans ID","Aktivasyon","Son doğrulama","Durum","İşlem"],dev.map(x=>'<tr><td><b>'+esc(x.device_label||"Etiketsiz cihaz")+'</b><div class="muted tiny">'+esc(x.id)+'</div></td><td>'+esc(x.license_id)+'</td><td>'+date(x.first_activated_at)+'</td><td>'+date(x.last_verified_at)+'</td><td>'+badge(x.released_at?"Serbest bırakıldı":"Bağlı")+'</td><td>'+(!x.released_at?'<button class="danger" data-action="release" data-id="'+x.id+'">Cihazı serbest bırak</button>':"—")+'</td></tr>'))+'</section>';
+    } else if(state.page==="sales"){
+      const ss=d.sales.filter(x=>[x.customer?.company_name,x.customer?.customer_number,x.payment_method,x.notes].join(" ").toLocaleLowerCase("tr-TR").includes(q));
+      html=pageHead("Satış ve tahsilat","Satış bedelleri, tahsilatlar ve kalan bakiyeler.",'<button class="primary" data-action="new-sale">＋ Satış kaydı</button>')+
+      '<section class="panel">'+searchBar("Firma, müşteri no veya ödeme yöntemi ara…")+
+      table(["Müşteri","Satış tarihi","Toplam","Tahsil edilen","Kalan bakiye","Ödeme yöntemi","Vade","Tahsilat","İşlem"],ss.map(x=>'<tr><td><b>'+esc(x.customer?.company_name||"—")+'</b><div class="muted tiny">'+esc(x.customer?.customer_number||"")+'</div></td><td>'+date(x.sale_date)+'</td><td>'+money(x.total_amount,x.currency)+'</td><td>'+money(x.paid_amount,x.currency)+'</td><td>'+badge(x.balance>0?"Bakiye var":"Ödendi",x.balance>0?"warn":"good")+'<div>'+money(x.balance,x.currency)+'</div></td><td>'+esc(x.payment_method||"—")+'</td><td>'+date(x.due_date)+'</td><td>'+x.payments.length+'</td><td>'+(x.balance>0?'<button data-action="add-payment" data-id="'+x.id+'" data-balance="'+x.balance+'" data-currency="'+x.currency+'">Tahsilat ekle</button>':"—")+'</td></tr>'))+'</section>';
+    }
+    $("main").innerHTML=html;
+    const search=$("tableSearch");if(search)search.addEventListener("input",e=>{state.query=e.target.value;const pos=e.target.selectionStart;render();const next=$("tableSearch");next.focus();next.setSelectionRange(pos,pos)});
+  }
+  function modal(title, body, footer=""){ $("modalRoot").innerHTML='<div class="modalback" data-action="modal-backdrop"><div class="modal"><div class="modalhead"><h3>'+title+'</h3><button class="ghost modalclose" data-action="close-modal">✕</button></div>'+body+footer+'</div></div>'}
+  function closeModal(){$("modalRoot").innerHTML=""}
+  async function review(id,decision){
+    const note=prompt(decision==="approve"?"Onay notu (isteğe bağlı):":"Ret gerekçesi (önerilir):","")??"";
+    if(decision==="reject"&&!note.trim()){toast("Ret gerekçesi boş bırakılmamalı.",true);return}
+    try{await invoke("admin-review-demo",{request_id:id,decision,note});toast(decision==="approve"?"Demo onaylandı.":"Demo reddedildi.");await refreshQuiet()}
+    catch(e){toast(e.message||"Demo işlemi başarısız.",true)}
+  }
+  async function refreshQuiet(){state.data=await invoke("admin-dashboard");render()}
+  function newLicense(){
+    const active=state.data.customers.filter(c=>c.status==="active");
+    if(!active.length){toast("Lisans oluşturmak için önce aktif bir müşteri olmalı.",true);return}
+    modal("Yeni lisans",'<form id="licenseForm"><div class="field"><label>Müşteri</label><select id="licenseCustomer" required>'+active.map(c=>'<option value="'+c.id+'">'+esc(c.customer_number+' · '+c.company_name)+'</option>').join("")+'</select></div><div class="field"><label>Bitiş tarihi (isteğe bağlı)</label><input id="licenseExpiry" type="date" min="'+new Date().toISOString().slice(0,10)+'"></div><div class="field"><label>İç not</label><textarea id="licenseNotes" rows="3" maxlength="1000" placeholder="Satış / sözleşme notu"></textarea></div><div class="notice">Lisans anahtarı yalnızca bir kez gösterilir. Oluşturduktan sonra güvenli biçimde kopyalayıp müşteriye ilet.</div><button class="primary" id="createLicenseBtn" type="submit">Lisansı oluştur</button></form>');
+    $("licenseForm").addEventListener("submit",async e=>{e.preventDefault();const btn=$("createLicenseBtn");btn.disabled=true;try{const expires=$("licenseExpiry").value;const result=await invoke("create-license",{customer_id:$("licenseCustomer").value,expires_at:expires?new Date(expires+"T23:59:59").toISOString():null,notes:$("licenseNotes").value});modal("Lisans oluşturuldu",'<p class="muted">Müşteri: '+esc(result.customer_number)+'</p><div class="keybox" id="newKey">'+esc(result.license_key)+'</div><p class="notice">Bu anahtar tekrar gösterilemez. Şimdi kopyala ve güvenli biçimde müşteriye ilet.</p><button class="primary" data-action="copy-key">Anahtarı kopyala</button><button data-action="close-modal" style="margin-left:8px">Kapat</button>');state.key=result.license_key;await refreshQuiet();}catch(err){toast(err.message||"Lisans oluşturulamadı.",true);btn.disabled=false}});
+  }
+  function newSale(){
+    const active=state.data.customers.filter(c=>c.status==="active");
+    if(!active.length){toast("Satış kaydı için aktif müşteri gerekli.",true);return}
+    const opts=active.map(c=>'<option value="'+c.id+'">'+esc(c.customer_number+' · '+c.company_name)+'</option>').join("");
+    modal("Yeni satış kaydı",'<form id="saleForm"><div class="field"><label>Müşteri</label><select id="saleCustomer" required>'+opts+'</select></div><div class="row"><div class="field"><label>Toplam tutar</label><input id="saleTotal" type="number" min="0" step="0.01" required></div><div class="field"><label>Para birimi</label><select id="saleCurrency"><option value="TRY">TRY ₺</option><option value="EUR">EUR €</option><option value="USD">USD $</option></select></div></div><div class="row"><div class="field"><label>Satış tarihi</label><input id="saleDate" type="date" value="'+new Date().toISOString().slice(0,10)+'" required></div><div class="field"><label>Vade tarihi</label><input id="saleDue" type="date"></div></div><div class="field"><label>Ödeme yöntemi</label><input id="saleMethod" maxlength="100"></div><div class="field"><label>Not</label><textarea id="saleNotes" rows="2" maxlength="1000"></textarea></div><button id="saveSale" class="primary" type="submit">Satışı kaydet</button></form>');
+    $("saleForm").addEventListener("submit",async e=>{e.preventDefault();const btn=$("saveSale");btn.disabled=true;try{await invoke("admin-manage",{action:"create-sale",customer_id:$("saleCustomer").value,total_amount:Number($("saleTotal").value),currency:$("saleCurrency").value,sale_date:$("saleDate").value,due_date:$("saleDue").value||null,payment_method:$("saleMethod").value,notes:$("saleNotes").value});closeModal();toast("Satış kaydedildi.");await refreshQuiet()}catch(err){toast(err.message||"Satış kaydedilemedi.",true);btn.disabled=false}});
+  }
+  function addPayment(id,balance,currency){
+    modal("Tahsilat ekle",'<form id="paymentForm"><p class="muted">Kalan bakiye: <b>'+money(balance,currency)+'</b></p><div class="field"><label>Tahsilat tutarı ('+esc(currency)+')</label><input id="paymentAmount" type="number" min="0.01" max="'+Number(balance)+'" step="0.01" required></div><div class="field"><label>Ödeme yöntemi</label><input id="paymentMethod" maxlength="100"></div><div class="field"><label>Referans / not</label><input id="paymentNote" maxlength="500"></div><button id="savePayment" class="primary" type="submit">Tahsilatı kaydet</button></form>');
+    $("paymentForm").addEventListener("submit",async e=>{e.preventDefault();const btn=$("savePayment");btn.disabled=true;try{await invoke("admin-manage",{action:"add-payment",sale_id:id,amount:Number($("paymentAmount").value),payment_method:$("paymentMethod").value,reference_note:$("paymentNote").value});closeModal();toast("Tahsilat kaydedildi.");await refreshQuiet()}catch(err){toast(err.message||"Tahsilat kaydedilemedi.",true);btn.disabled=false}});
+  }
+  async function releaseDevice(id){
+    const note=prompt("Cihaz neden serbest bırakılıyor?","Bilgisayar değişikliği");if(note===null)return;
+    try{await invoke("release-license-device",{device_id:id,release_note:note});toast("Cihaz bağlantısı serbest bırakıldı.");await refreshQuiet()}
+    catch(e){toast(e.message||"Cihaz serbest bırakılamadı.",true)}
+  }
+  document.addEventListener("click",async e=>{
+    const btn=e.target.closest("[data-action]");if(!btn)return;const a=btn.dataset.action;
+    if(a==="goto"){state.page=btn.dataset.page;state.query="";render()}
+    if(a==="approve"||a==="reject")await review(btn.dataset.id,a);
+    if(a==="new-license")newLicense();
+    if(a==="release")await releaseDevice(btn.dataset.id);
+    if(a==="new-sale")newSale();
+    if(a==="add-payment")addPayment(btn.dataset.id,Number(btn.dataset.balance),btn.dataset.currency);
+    if(a==="customer-status"){if(confirm("Müşteri durumu "+btn.dataset.status+" olarak değiştirilsin mi?")){try{await invoke("admin-manage",{action:"customer-status",customer_id:btn.dataset.id,status:btn.dataset.status});toast("Müşteri durumu güncellendi.");await refreshQuiet()}catch(err){toast(err.message||"Durum değiştirilemedi.",true)}}}
+    if(a==="license-status"){if(confirm("Lisans durumu "+btn.dataset.status+" olarak değiştirilsin mi?")){try{await invoke("admin-manage",{action:"license-status",license_id:btn.dataset.id,status:btn.dataset.status});toast("Lisans durumu güncellendi.");await refreshQuiet()}catch(err){toast(err.message||"Lisans durumu değiştirilemedi.",true)}}}
+    if(a==="close-modal")closeModal();
+    if(a==="modal-backdrop"&&e.target===btn)closeModal();
+    if(a==="copy-key"){try{await navigator.clipboard.writeText(state.key||$("newKey")?.textContent||"");toast("Lisans anahtarı panoya kopyalandı.")}catch{toast("Kopyalama engellendi; anahtarı seçip kopyala.",true)}}
+  });
+  document.querySelectorAll(".nav").forEach(b=>b.addEventListener("click",()=>{state.page=b.dataset.page;state.query="";render()}));
+  $("loginBtn").addEventListener("click",login);$("password").addEventListener("keydown",e=>{if(e.key==="Enter")login()});$("email").addEventListener("keydown",e=>{if(e.key==="Enter")$("password").focus()});
+  $("logoutBtn").addEventListener("click",logout);$("refreshBtn").addEventListener("click",refresh);
+  // Do not store credentials or project keys in browser storage. The public key is re-entered per session.
+  $("projectUrl").value=projectDefault;
+})();
+</script>
+</body></html>

@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+license-signing-private.jwk.json
+license-signing-public.jwk.json
+client_secrets.json
+*.pem
+*.key
