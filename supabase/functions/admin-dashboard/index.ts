@@ -31,7 +31,7 @@ function keyFromMap(name: string): string | null {
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "GET") return json({ error: "Method not allowed." }, 405);
+  if (!["GET", "POST"].includes(req.method)) return json({ error: "Method not allowed." }, 405);
 
   const url = Deno.env.get("SUPABASE_URL");
   const publishableKey = keyFromMap("SUPABASE_PUBLISHABLE_KEYS") ?? Deno.env.get("SUPABASE_ANON_KEY");
