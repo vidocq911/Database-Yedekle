@@ -39,7 +39,8 @@ Deploy these functions from the current branch when ready:
 - `supabase/functions/create-license/index.ts`
 - `supabase/functions/activate-license/index.ts`
 - `supabase/functions/release-license-device/index.ts`
-- `supabase/functions/admin-dashboard/index.ts` (authenticated read-only dashboard data; owner/admin allowlist required)
+- `supabase/functions/admin-dashboard/index.ts` (authenticated dashboard data; owner/admin allowlist required)
+- `supabase/functions/admin-manage/index.ts` (authenticated sales, payment, customer-status, and license-status actions)
 
 Before deploying `activate-license`, generate an Ed25519 key pair locally:
 ```powershell
@@ -70,16 +71,16 @@ The admin-review handler calls `public.review_demo_request_atomic`, which update
 
 - Static dashboard UI: `docs/admin.html` (link from the product landing page).
 - The page uses Supabase Auth password sign-in and calls `admin-dashboard`, `admin-review-demo`, `create-license`, and `release-license-device`.
-- Deploy `admin-dashboard` alongside the other functions. The dashboard function verifies the current Auth user and checks `public.admin_users` for an active `owner` or `admin` role before returning customer, demo, license, device, sales, or payment data.
+- Deploy `admin-dashboard` alongside the other functions. The dashboard function verifies the current Auth user and checks `public.admin_users` for an active `owner` or `admin` role before returning customer, demo, license, device, sales, or payment data. The `admin-manage` function performs authorized sale creation, payment recording, customer blocking/unblocking, and license suspend/reactivate/revoke actions.
 - Publish the `docs/` folder using GitHub Pages. If the site is served from the repository's `docs/` directory, the panel URL is `https://<owner>.github.io/<repository>/admin.html`.
 - On the sign-in page, enter the project's public publishable/anon key and a Supabase Auth administrator email/password. Never enter a secret/service-role key in the browser.
 - Bootstrap the owner with the SQL statement in the previous section. The dashboard does not offer public self-registration or a way to grant admin privileges.
-- Current dashboard supports overview, customer list, demo approval/rejection, license creation, device release, and read-only sales/payment views. Sales/payment creation and customer status editing are not implemented yet.
+- Dashboard UI includes overview, customer list, demo approval/rejection, license creation, device release, sale creation, payment recording, customer block/unblock, license suspend/reactivate/revoke, and sales/payment views.
 
 ## Known implementation gaps — not production-ready yet
 
 - Public demo requests need rate limiting and CAPTCHA/bot protection.
-- Deploy and test the new `admin-dashboard` Edge Function and verify that all five admin/public functions are deployed to the intended Supabase project.
+- Deploy and test the new `admin-dashboard` and `admin-manage` Edge Functions and verify that all functions are deployed to the intended Supabase project.
 - Review the atomic demo-review RPC and test unauthorized, non-admin, approve, reject, duplicate-review, and partial-failure cases.
 - Verify unauthorized, non-admin, approve, reject, duplicate-review, and partial-failure cases.
 - Bundle the generated public JWK as `license-public-jwk.json` with the Windows app; never bundle the private signing key or any Supabase secret.
