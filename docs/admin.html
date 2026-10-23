@@ -168,7 +168,11 @@
     if(a==="goto"){state.page=btn.dataset.page;state.query="";render()}
     if(a==="approve"||a==="reject")await review(btn.dataset.id,a);
     if(a==="new-license")newLicense();
-    if(a==="release")await releaseDevice(btn.dataset.id);\n    if(a==="new-sale")newSale();\n    if(a==="add-payment")addPayment(btn.dataset.id,Number(btn.dataset.balance),btn.dataset.currency);\n    if(a==="customer-status"){if(confirm("Müşteri durumu "+btn.dataset.status+" olarak değiştirilsin mi?")){try{await invoke("admin-manage",{action:"customer-status",customer_id:btn.dataset.id,status:btn.dataset.status});toast("Müşteri durumu güncellendi.");await refreshQuiet()}catch(err){toast(err.message||"Durum değiştirilemedi.",true)}}}\n    if(a==="license-status"){if(confirm("Lisans durumu "+btn.dataset.status+" olarak değiştirilsin mi?")){try{await invoke("admin-manage",{action:"license-status",license_id:btn.dataset.id,status:btn.dataset.status});toast("Lisans durumu güncellendi.");await refreshQuiet()}catch(err){toast(err.message||"Lisans durumu değiştirilemedi.",true)}}}
+    if(a==="release")await releaseDevice(btn.dataset.id);
+    if(a==="new-sale")newSale();
+    if(a==="add-payment")addPayment(btn.dataset.id,Number(btn.dataset.balance),btn.dataset.currency);
+    if(a==="customer-status"){if(confirm("Müşteri durumu "+btn.dataset.status+" olarak değiştirilsin mi?")){try{await invoke("admin-manage",{action:"customer-status",customer_id:btn.dataset.id,status:btn.dataset.status});toast("Müşteri durumu güncellendi.");await refreshQuiet()}catch(err){toast(err.message||"Durum değiştirilemedi.",true)}}}
+    if(a==="license-status"){if(confirm("Lisans durumu "+btn.dataset.status+" olarak değiştirilsin mi?")){try{await invoke("admin-manage",{action:"license-status",license_id:btn.dataset.id,status:btn.dataset.status});toast("Lisans durumu güncellendi.");await refreshQuiet()}catch(err){toast(err.message||"Lisans durumu değiştirilemedi.",true)}}}
     if(a==="close-modal")closeModal();
     if(a==="modal-backdrop"&&e.target===btn)closeModal();
     if(a==="copy-key"){try{await navigator.clipboard.writeText(state.key||$("newKey")?.textContent||"");toast("Lisans anahtarı panoya kopyalandı.")}catch{toast("Kopyalama engellendi; anahtarı seçip kopyala.",true)}}
